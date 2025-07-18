@@ -1,0 +1,37 @@
+[data-theme="dark"] {
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --text-primary: #f5f5f5;
+  --text-secondary: #b3b3b3;
+  --accent-primary: #00FFFF;
+  --accent-primary-rgb: 0, 255, 255;
+  --accent-secondary: #8A2BE2;
+  --accent-secondary-rgb: 138, 43, 226;
+  --card-bg: #1e1e1e;
+  --card-border: linear-gradient(135deg, #00FFFF, #8A2BE2);
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --button-bg: linear-gradient(135deg, #00FFFF, #8A2BE2);
+  --button-text: #121212;
+  --input-bg: #2d2d2d;
+  --input-border: #3d3d3d;
+  --input-text: #f5f5f5;
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+  --info: #2563eb;
+  
+  /* Additional UI elements */
+  --header-bg: #1e1e1e;
+  --footer-bg: #121212;
+  --card-hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  --divider: #333333;
+  --scrollbar-track: #1e1e1e;
+  --scrollbar-thumb: #444444;
+  --scrollbar-thumb-hover: #555555;
+  --tooltip-bg: #f5f5f5;
+  --tooltip-text: #121212;
+  --code-bg: #2d2d2d;
+  --code-text: #f5f5f5;
+  --selection-bg: rgba(0, 255, 255, 0.2);
+  --selection-text: #f5f5f5;
+}

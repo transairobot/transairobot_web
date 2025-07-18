@@ -1,0 +1,54 @@
+// Base colors
+$color-cyan: #00FFFF;
+$color-purple: #8A2BE2;
+$color-blue: #1E90FF;
+
+// Font families
+$font-primary: 'Inter', 'Roboto', sans-serif;
+$font-heading: 'Inter', 'Roboto', sans-serif;
+
+// Font sizes
+$font-size-xs: 0.75rem;    // 12px
+$font-size-sm: 0.875rem;   // 14px
+$font-size-md: 1rem;       // 16px
+$font-size-lg: 1.125rem;   // 18px
+$font-size-xl: 1.25rem;    // 20px
+$font-size-2xl: 1.5rem;    // 24px
+$font-size-3xl: 1.875rem;  // 30px
+$font-size-4xl: 2.25rem;   // 36px
+
+// Spacing
+$spacing-xs: 0.25rem;      // 4px
+$spacing-sm: 0.5rem;       // 8px
+$spacing-md: 1rem;         // 16px
+$spacing-lg: 1.5rem;       // 24px
+$spacing-xl: 2rem;         // 32px
+$spacing-2xl: 3rem;        // 48px
+
+// Border radius
+$border-radius-sm: 0.25rem;  // 4px
+$border-radius-md: 0.5rem;   // 8px
+$border-radius-lg: 1rem;     // 16px
+
+// Breakpoints
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+
+// Z-index
+$z-index-dropdown: 1000;
+$z-index-sticky: 1020;
+$z-index-fixed: 1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal: 1050;
+$z-index-popover: 1060;
+$z-index-tooltip: 1070;
+
+// Transitions
+$transition-fast: 150ms;
+$transition-normal: 300ms;
+$transition-slow: 500ms;
+// Additional spacing
+$spacing-3xl: 4rem;        // 64px

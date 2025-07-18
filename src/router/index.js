@@ -1,0 +1,95 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import store from '../store';
+
+const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: () => import('../views/HomePage.vue')
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/LoginPage.vue'),
+    meta: { guestOnly: true }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/RegisterPage.vue'),
+    meta: { guestOnly: true }
+  },
+  {
+    path: '/app-store',
+    name: 'AppStore',
+    component: () => import('../views/AppStorePage.vue')
+  },
+  {
+    path: '/app/:id',
+    name: 'AppDetail',
+    component: () => import('../views/AppDetailPage.vue')
+  },
+  {
+    path: '/my-robots',
+    name: 'MyRobots',
+    component: () => import('../views/MyRobotsPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/robot/:id',
+    name: 'RobotDetail',
+    component: () => import('../views/RobotDetailPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/developer',
+    name: 'DeveloperPortal',
+    component: () => import('../views/DeveloperPortalPage.vue'),
+    meta: { requiresAuth: true, roles: ['developer', 'admin'] }
+  },
+  {
+    path: '/admin',
+    name: 'AdminDashboard',
+    component: () => import('../views/AdminDashboardPage.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] }
+  }
+];
+
+const router = createRouter({
+  history: createWebHistory(process.env.BASE_URL),
+  routes
+});
+
+// Navigation guards
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = store.getters['auth/isAuthenticated'];
+  const userRole = store.getters['auth/userRole'];
+
+  // Routes that require authentication
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!isAuthenticated) {
+      next({ name: 'Login', query: { redirect: to.fullPath } });
+      return;
+    }
+
+    // Check role-based access
+    if (to.matched.some(record => record.meta.roles && record.meta.roles.length)) {
+      if (!to.meta.roles.includes(userRole)) {
+        next({ name: 'Home' });
+        return;
+      }
+    }
+  }
+
+  // Routes for guests only (like login, register)
+  if (to.matched.some(record => record.meta.guestOnly)) {
+    if (isAuthenticated) {
+      next({ name: 'Home' });
+      return;
+    }
+  }
+
+  next();
+});
+
+export default router;
