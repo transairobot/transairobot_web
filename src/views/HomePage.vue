@@ -147,7 +147,7 @@ export default {
         {
           icon: '🔋',
           title: 'Power Management',
-          description: 'Optimize battery usage for longer operation',
+          description: 'Optimize battery usage',
           rating: '4.9'
         },
         {
@@ -159,7 +159,7 @@ export default {
         {
           icon: '🛡️',
           title: 'Security Shield',
-          description: 'Protect your robot from unauthorized access',
+          description: 'Protect your robot from unauth access',
           rating: '4.8',
           badge: 'Featured'
         },
@@ -203,5 +203,89 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.featured-apps {
+  padding: 3rem;
+  border-radius: 1rem;
+  background-color: var(--bg-secondary);
+  box-shadow: 0 10px 30px -15px rgba(var(--accent-primary-rgb), 0.2),
+    0 -10px 30px -15px rgba(var(--accent-secondary-rgb), 0.2);
+  transition: box-shadow 0.3s ease-in-out;
+
+  &:hover {
+    box-shadow: 0 20px 40px -15px rgba(var(--accent-primary-rgb), 0.3),
+      0 -20px 40px -15px rgba(var(--accent-secondary-rgb), 0.3);
+  }
+}
+
+.app-card {
+  background-color: var(--card-bg);
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  // box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  height: 90%; /* Ensure card takes full height of grid item */
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0.75rem;
+    padding: 2px;
+    background: var(--card-border);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  &:hover {
+    transform: translateY(-5px);
+    // box-shadow: 0 -10px 30px -10px rgba(var(--accent-primary-rgb), 0.25);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  .app-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .app-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--accent-primary);
+    color: var(--button-text);
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  h3 {
+    margin: 0.5rem 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    flex-grow: 1; /* Allow description to take up available space */
+  }
+}
 /* Style content remains the same */
 </style>

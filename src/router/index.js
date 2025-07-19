@@ -64,6 +64,18 @@ const routes = [
     name: 'AdminDashboard',
     component: () => import('../views/AdminDashboardPage.vue'),
     meta: { requiresAuth: true, roles: ['admin'] }
+  },
+  {
+    path: '/admin/review',
+    name: 'AdminAppReview',
+    component: () => import('../views/AdminAppReviewPage.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] }
+  },
+  {
+    path: '/admin/store',
+    name: 'AdminStoreManagement',
+    component: () => import('../views/AdminStoreManagementPage.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] }
   }
 ];
 
