@@ -8,10 +8,13 @@
  * @param {Object} options - Intl.DateTimeFormat options
  * @returns {string} Formatted date string
  */
-export const formatDate = (date, options = {}) => {
+export const formatDate = (
+  date: string | Date | null | undefined,
+  options: Intl.DateTimeFormatOptions = {}
+): string => {
   if (!date) return '';
 
-  const defaultOptions = {
+  const defaultOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -28,7 +31,7 @@ export const formatDate = (date, options = {}) => {
  * @param {number} decimals - Number of decimal places
  * @returns {string} Formatted number string
  */
-export const formatNumber = (number, decimals = 0) => {
+export const formatNumber = (number: number | null | undefined, decimals = 0): string => {
   if (number === null || number === undefined) return '';
 
   return new Intl.NumberFormat('en-US', {
@@ -43,7 +46,7 @@ export const formatNumber = (number, decimals = 0) => {
  * @param {number} decimals - Number of decimal places
  * @returns {string} Formatted file size
  */
-export const formatFileSize = (bytes, decimals = 2) => {
+export const formatFileSize = (bytes: number, decimals = 2): string => {
   if (bytes === 0) return '0 Bytes';
 
   const k = 1024;
@@ -58,7 +61,7 @@ export const formatFileSize = (bytes, decimals = 2) => {
  * @param {string} version - Version string (e.g., "1.2.3")
  * @returns {string} Formatted version string
  */
-export const formatVersion = version => {
+export const formatVersion = (version: string | null | undefined): string => {
   if (!version) return '';
 
   // Add "v" prefix if not present
@@ -71,7 +74,7 @@ export const formatVersion = version => {
  * @param {number} length - Maximum length
  * @returns {string} Truncated text
  */
-export const truncateText = (text, length = 100) => {
+export const truncateText = (text: string | null | undefined, length = 100): string => {
   if (!text) return '';
 
   if (text.length <= length) return text;

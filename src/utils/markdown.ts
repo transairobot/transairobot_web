@@ -10,7 +10,7 @@
  * @param {string} markdown - Markdown text
  * @returns {string} HTML string
  */
-export const markdownToHtml = markdown => {
+export const markdownToHtml = (markdown: string | null | undefined): string => {
   if (!markdown) return '';
 
   // This is a very simplified implementation
@@ -47,7 +47,7 @@ export const markdownToHtml = markdown => {
  * @param {string} html - HTML string
  * @returns {string} Sanitized HTML
  */
-export const sanitizeHtml = html => {
+export const sanitizeHtml = (html: string): string => {
   // In a real app, use a proper sanitizer library like DOMPurify
   return html;
 };
@@ -57,7 +57,7 @@ export const sanitizeHtml = html => {
  * @param {string} markdown - Markdown text
  * @returns {string} Safe HTML
  */
-export const renderMarkdown = markdown => {
+export const renderMarkdown = (markdown: string | null | undefined): string => {
   const html = markdownToHtml(markdown);
   return sanitizeHtml(html);
 };

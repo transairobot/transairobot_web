@@ -128,30 +128,30 @@ export default {
         loading.value = true;
         error.value = null;
 
-        // This would be replaced with an actual API call
-        setTimeout(() => {
-          const mockUser = {
-            id: '1',
-            nickname: form.value.nickname,
-            account: form.value.email.split('@')[0],
-            email: form.value.email,
-            avatar: '/assets/images/avatar.png',
-            role: 'user'
-          };
+        // Prepare user data for registration
+        const userData = {
+          nickname: form.value.nickname,
+          email: form.value.email,
+          password: form.value.password
+        };
 
-          const mockToken = 'mock-jwt-token';
+        // Call the authentication service
+        const authService = await import('../services/auth.service').then(module => module.default);
+        const response = await authService.register(userData);
 
-          store.dispatch('auth/login', {
-            token: mockToken,
-            user: mockUser
-          });
+        // Store the token and user data
+        store.dispatch('auth/login', {
+          token: response.token,
+          user: response.user
+        });
 
-          router.push('/');
-          loading.value = false;
-        }, 1000);
+        // Redirect to home page
+        router.push('/');
       } catch (err) {
         loading.value = false;
         error.value = err.message || 'Failed to register. Please try again.';
+      } finally {
+        loading.value = false;
       }
     };
 

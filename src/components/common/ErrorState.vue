@@ -3,8 +3,9 @@
     <div class="error-icon">
       <i class="fas fa-exclamation-circle"></i>
     </div>
+    <h3 class="error-title">{{ title }}</h3>
     <p class="error-message">{{ message }}</p>
-    <button v-if="showRetry" @click="$emit('retry')" class="retry-button">Try Again</button>
+    <slot></slot>
   </div>
 </template>
 
@@ -12,13 +13,13 @@
 export default {
   name: 'ErrorState',
   props: {
+    title: {
+      type: String,
+      default: 'Error'
+    },
     message: {
       type: String,
-      default: 'Something went wrong'
-    },
-    showRetry: {
-      type: Boolean,
-      default: true
+      default: 'Something went wrong. Please try again.'
     }
   }
 };
@@ -34,29 +35,19 @@ export default {
   text-align: center;
 
   .error-icon {
-    font-size: 2.5rem;
-    color: var(--danger);
+    font-size: 3rem;
+    color: var(--error-color);
     margin-bottom: 1rem;
+  }
+
+  .error-title {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
   }
 
   .error-message {
     color: var(--text-secondary);
     margin-bottom: 1.5rem;
-  }
-
-  .retry-button {
-    padding: 0.5rem 1.5rem;
-    background-color: var(--accent-primary);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s ease;
-
-    &:hover {
-      background-color: var(--accent-primary-dark);
-    }
   }
 }
 </style>

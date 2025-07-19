@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2020",
     "module": "esnext",
     "strict": true,
     "jsx": "preserve",
@@ -32,7 +32,9 @@
     "src/**/*.tsx",
     "src/**/*.vue",
     "tests/**/*.ts",
-    "tests/**/*.tsx"
+    "tests/**/*.tsx",
+    "tests/unit/store/shims-vuex.d.ts",
+    "tests/unit/store/shims-robots.d.ts"
   ],
   "exclude": [
     "node_modules"

@@ -1,37 +1,37 @@
 <template>
-  <div class="login-page">
+  <div class="forgot-password-page">
     <AppContainer size="small">
       <AppCard>
-        <h1 class="login-title">Login</h1>
-        <form @submit.prevent="handleLogin" class="login-form">
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              v-model="form.email"
-              class="form-control"
-              required
-              placeholder="Enter your email"
-            />
+        <h1 class="forgot-password-title">Reset Password</h1>
+        <form @submit.prevent="handleSubmit" class="forgot-password-form">
+          <div v-if="!submitted">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                v-model="form.email"
+                class="form-control"
+                required
+                placeholder="Enter your email"
+              />
+            </div>
+
+            <div class="form-actions">
+              <AppButton type="submit" :disabled="loading" block>
+                {{ loading ? 'Sending...' : 'Send Reset Link' }}
+              </AppButton>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              v-model="form.password"
-              class="form-control"
-              required
-              placeholder="Enter your password"
-            />
-          </div>
-
-          <div class="form-actions">
-            <AppButton type="submit" :disabled="loading" block>
-              {{ loading ? 'Logging in...' : 'Login' }}
-            </AppButton>
+          <div v-else class="success-message">
+            <p>
+              If an account exists with the email {{ form.email }}, you will receive password reset
+              instructions.
+            </p>
+            <div class="form-actions">
+              <AppButton @click="$router.push('/login')" block>Back to Login</AppButton>
+            </div>
           </div>
 
           <div v-if="error" class="form-error">
@@ -39,8 +39,7 @@
           </div>
 
           <div class="form-links">
-            <router-link to="/register">Don't have an account? Register</router-link>
-            <router-link to="/forgot-password">Forgot password?</router-link>
+            <router-link to="/login">Back to Login</router-link>
           </div>
         </form>
       </AppCard>
@@ -50,52 +49,36 @@
 
 <script>
 import { ref } from 'vue';
-import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
 import AppContainer from '../components/common/AppContainer.vue';
 import AppCard from '../components/common/AppCard.vue';
 import AppButton from '../components/common/AppButton.vue';
+import authService from '../services/auth.service';
 
 export default {
-  name: 'LoginPage',
+  name: 'ForgotPasswordPage',
   components: {
     AppContainer,
     AppCard,
     AppButton
   },
   setup() {
-    const store = useStore();
-    const router = useRouter();
-
     const form = ref({
-      email: 'test@example.com',
-      password: 'password123'
+      email: ''
     });
 
     const loading = ref(false);
     const error = ref(null);
+    const submitted = ref(false);
 
-    const handleLogin = async () => {
+    const handleSubmit = async () => {
       try {
         loading.value = true;
         error.value = null;
 
-        // Call the authentication service
-        const authService = await import('../services/auth.service').then(module => module.default);
-        const response = await authService.login(form.value.email, form.value.password);
-
-        // Store the token and user data
-        store.dispatch('auth/login', {
-          token: response.token,
-          user: response.user
-        });
-
-        // Redirect to home or the requested page
-        const redirectPath = router.currentRoute.value.query.redirect || '/';
-        router.push(redirectPath);
+        await authService.requestPasswordReset(form.value.email);
+        submitted.value = true;
       } catch (err) {
-        loading.value = false;
-        error.value = err.message || 'Failed to login. Please try again.';
+        error.value = err.message || 'Failed to send reset link. Please try again.';
       } finally {
         loading.value = false;
       }
@@ -105,14 +88,15 @@ export default {
       form,
       loading,
       error,
-      handleLogin
+      submitted,
+      handleSubmit
     };
   }
 };
 </script>
 
 <style lang="scss" scoped>
-.login-page {
+.forgot-password-page {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,13 +104,13 @@ export default {
   padding: 2rem 0;
 }
 
-.login-title {
+.forgot-password-title {
   text-align: center;
   margin-bottom: 2rem;
   color: var(--text-primary);
 }
 
-.login-form {
+.forgot-password-form {
   .form-group {
     margin-bottom: 1.5rem;
 
@@ -165,6 +149,12 @@ export default {
     background-color: var(--error-bg);
     color: var(--error-color);
     font-size: 0.9rem;
+  }
+
+  .success-message {
+    text-align: center;
+    margin: 1rem 0;
+    color: var(--text-primary);
   }
 
   .form-links {

@@ -1,6 +1,25 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import store from '../store';
 
+// Initialize auth state from localStorage
+const initializeAuth = async () => {
+  // If we have a token but no user data, try to fetch the user profile
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user'));
+
+  if (token && !user) {
+    try {
+      await store.dispatch('auth/fetchCurrentUser');
+    } catch (error) {
+      // If fetching user fails, clear the token
+      store.dispatch('auth/logout');
+    }
+  }
+};
+
+// Call initialization
+initializeAuth();
+
 const routes = [
   {
     path: '/',
@@ -58,6 +77,24 @@ const routes = [
     name: 'DeveloperVerification',
     component: () => import('../views/DeveloperVerificationPage.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'UserProfile',
+    component: () => import('../views/UserProfilePage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPasswordPage.vue'),
+    meta: { guestOnly: true }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('../views/ResetPasswordPage.vue'),
+    meta: { guestOnly: true }
   },
   {
     path: '/admin',

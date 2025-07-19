@@ -2,15 +2,17 @@
  * Theme utility functions
  */
 
+export type Theme = 'light' | 'dark' | 'system';
+
 /**
  * Initialize theme based on user preference or system preference
  */
-export const initializeTheme = () => {
+export const initializeTheme = (): Theme => {
   const savedTheme = localStorage.getItem('theme');
 
   if (savedTheme && savedTheme !== 'system') {
     document.documentElement.setAttribute('data-theme', savedTheme);
-    return savedTheme;
+    return savedTheme as Theme;
   }
 
   // Check for system preference
@@ -30,7 +32,7 @@ export const initializeTheme = () => {
 /**
  * Toggle between light and dark themes
  */
-export const toggleTheme = () => {
+export const toggleTheme = (): 'light' | 'dark' => {
   const currentTheme = localStorage.getItem('theme') || 'light';
 
   // If using system preference, toggle between light and dark explicitly
@@ -53,7 +55,7 @@ export const toggleTheme = () => {
 /**
  * Set theme explicitly
  */
-export const setTheme = theme => {
+export const setTheme = (theme: Theme): Theme => {
   if (theme === 'system') {
     // Use system preference
     localStorage.setItem('theme', 'system');
@@ -72,13 +74,13 @@ export const setTheme = theme => {
 /**
  * Get current theme
  */
-export const getCurrentTheme = () => {
-  return localStorage.getItem('theme') || 'light';
+export const getCurrentTheme = (): Theme => {
+  return (localStorage.getItem('theme') as Theme) || 'light';
 };
 
 /**
  * Get current applied theme (the actual theme being displayed)
  */
-export const getCurrentAppliedTheme = () => {
-  return document.documentElement.getAttribute('data-theme') || 'light';
+export const getCurrentAppliedTheme = (): 'light' | 'dark' => {
+  return (document.documentElement.getAttribute('data-theme') as 'light' | 'dark') || 'light';
 };
