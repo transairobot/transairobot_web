@@ -2,39 +2,42 @@
   <div class="developer-portal-page">
     <AppHeader />
     <main>
-      <Container>
+      <AppContainer>
         <div class="portal-header">
           <h1>Developer Portal</h1>
           <p class="portal-subtitle">Create and manage applications for TransAIRobot devices</p>
         </div>
-        
+
         <div v-if="loading" class="loading-container">
           <LoadingState message="Loading developer portal..." />
         </div>
-        
+
         <template v-else>
           <!-- Show registration form for users who are not developers -->
           <div v-if="!isDeveloper && !isPendingDeveloper" class="registration-section">
             <AppCard variant="primary">
               <div class="registration-header">
                 <h2>Become a Developer</h2>
-                <p>Join our developer program to create and publish applications for TransAIRobot devices.</p>
+                <p>
+                  Join our developer program to create and publish applications for TransAIRobot
+                  devices.
+                </p>
               </div>
               <DeveloperRegistrationForm />
             </AppCard>
           </div>
-          
+
           <!-- Show pending verification message for users with pending status -->
           <div v-else-if="isPendingDeveloper" class="verification-section">
             <VerificationPending />
           </div>
-          
+
           <!-- Show dashboard for approved developers -->
           <div v-else-if="isDeveloper" class="dashboard-section">
             <DeveloperDashboard />
           </div>
         </template>
-      </Container>
+      </AppContainer>
     </main>
     <AppFooter />
   </div>
@@ -45,7 +48,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import AppHeader from '../components/common/AppHeader.vue';
 import AppFooter from '../components/common/AppFooter.vue';
-import Container from '../components/common/Container.vue';
+import AppContainer from '../components/common/AppContainer.vue';
 import AppCard from '../components/common/AppCard.vue';
 import LoadingState from '../components/common/LoadingState.vue';
 import DeveloperRegistrationForm from '../components/developer/DeveloperRegistrationForm.vue';
@@ -57,7 +60,7 @@ export default {
   components: {
     AppHeader,
     AppFooter,
-    Container,
+    AppContainer,
     AppCard,
     LoadingState,
     DeveloperRegistrationForm,
@@ -67,27 +70,29 @@ export default {
   setup() {
     const store = useStore();
     const loading = ref(true);
-    
+
     const currentUser = computed(() => store.getters['auth/currentUser']);
-    
+
     const isDeveloper = computed(() => {
-      return currentUser.value && 
-        (currentUser.value.role === 'developer' || 
-         currentUser.value.role === 'admin' ||
-         (currentUser.value.developerStatus === 'approved'));
+      return (
+        currentUser.value &&
+        (currentUser.value.role === 'developer' ||
+          currentUser.value.role === 'admin' ||
+          currentUser.value.developerStatus === 'approved')
+      );
     });
-    
+
     const isPendingDeveloper = computed(() => {
       return currentUser.value && currentUser.value.developerStatus === 'pending';
     });
-    
+
     onMounted(() => {
       // Simulate loading delay
       setTimeout(() => {
         loading.value = false;
       }, 500);
     });
-    
+
     return {
       loading,
       currentUser,
@@ -108,11 +113,11 @@ export default {
     flex: 1;
     padding: 2rem 0;
   }
-  
+
   .portal-header {
     text-align: center;
     margin-bottom: 2.5rem;
-    
+
     h1 {
       margin-bottom: 0.5rem;
       font-size: 2.5rem;
@@ -122,31 +127,31 @@ export default {
       background-clip: text;
       text-fill-color: transparent;
     }
-    
+
     .portal-subtitle {
       color: var(--text-secondary);
       font-size: 1.1rem;
     }
   }
-  
+
   .loading-container {
     display: flex;
     justify-content: center;
     padding: 3rem 0;
   }
-  
+
   .registration-section {
     max-width: 800px;
     margin: 0 auto;
-    
+
     .registration-header {
       text-align: center;
       margin-bottom: 2rem;
-      
+
       h2 {
         margin-bottom: 0.5rem;
       }
-      
+
       p {
         color: var(--text-secondary);
       }

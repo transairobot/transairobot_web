@@ -64,7 +64,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 
@@ -81,7 +81,6 @@ export default {
     }
   },
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
 
     const searchQuery = ref('');

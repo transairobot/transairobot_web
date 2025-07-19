@@ -10,9 +10,11 @@ export default {
     userRole: state => (state.user ? state.user.role : null),
     isDeveloper: state => {
       if (!state.user) return false;
-      return state.user.role === 'developer' || 
-             state.user.role === 'admin' || 
-             state.user.developerStatus === 'approved';
+      return (
+        state.user.role === 'developer' ||
+        state.user.role === 'admin' ||
+        state.user.developerStatus === 'approved'
+      );
     },
     isDeveloperPending: state => {
       if (!state.user) return false;
@@ -49,14 +51,14 @@ export default {
     },
     applyAsDeveloper({ commit, state }, developerData) {
       // This would be replaced with an actual API call
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         setTimeout(() => {
           const updatedUser = {
             ...state.user,
             developerStatus: 'pending',
             developerProfile: developerData
           };
-          
+
           commit('UPDATE_USER', updatedUser);
           resolve(updatedUser);
         }, 1000);

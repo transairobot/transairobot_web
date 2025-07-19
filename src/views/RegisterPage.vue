@@ -1,6 +1,6 @@
 <template>
   <div class="register-page">
-    <Container size="small">
+    <AppContainer size="small">
       <AppCard>
         <h1 class="register-title">Create Account</h1>
         <form @submit.prevent="handleRegister" class="register-form">
@@ -70,7 +70,7 @@
           </div>
         </form>
       </AppCard>
-    </Container>
+    </AppContainer>
   </div>
 </template>
 
@@ -78,7 +78,7 @@
 import { ref } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
-import Container from '../components/common/Container.vue';
+import AppContainer from '../components/common/AppContainer.vue';
 import AppCard from '../components/common/AppCard.vue';
 import AppButton from '../components/common/AppButton.vue';
 import { validatePassword } from '../utils/validation';
@@ -86,7 +86,7 @@ import { validatePassword } from '../utils/validation';
 export default {
   name: 'RegisterPage',
   components: {
-    Container,
+    AppContainer,
     AppCard,
     AppButton
   },

@@ -1,12 +1,5 @@
 <template>
-  <div
-    class="app-container"
-    :class="[
-      fluid ? 'app-container--fluid' : '',
-      narrow ? 'app-container--narrow' : '',
-      `app-container--${padding}`
-    ]"
-  >
+  <div class="container" :class="{ 'container--narrow': narrow }">
     <slot></slot>
   </div>
 </template>
@@ -15,62 +8,29 @@
 export default {
   name: 'AppContainer',
   props: {
-    fluid: {
-      type: Boolean,
-      default: false
-    },
     narrow: {
       type: Boolean,
       default: false
-    },
-    padding: {
-      type: String,
-      default: 'normal',
-      validator: value => ['none', 'small', 'normal', 'large'].includes(value)
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/styles/variables.scss';
-
-.app-container {
+.container {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 $spacing-md;
-
-  &--fluid {
-    max-width: none;
-  }
+  padding: 0 1.5rem;
 
   &--narrow {
-    max-width: 800px;
+    max-width: 900px;
   }
+}
 
-  &--none {
-    padding: 0;
-  }
-
-  &--small {
-    padding: 0 $spacing-sm;
-  }
-
-  &--normal {
-    padding: 0 $spacing-md;
-
-    @media (min-width: $breakpoint-md) {
-      padding: 0 $spacing-lg;
-    }
-  }
-
-  &--large {
-    padding: 0 $spacing-lg;
-
-    @media (min-width: $breakpoint-md) {
-      padding: 0 $spacing-xl;
-    }
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
   }
 }
 </style>

@@ -2,9 +2,9 @@
   <div class="developer-verification-page">
     <AppHeader />
     <main>
-      <Container>
+      <AppContainer>
         <VerificationPending />
-      </Container>
+      </AppContainer>
     </main>
     <AppFooter />
   </div>
@@ -16,7 +16,7 @@ import { useRouter } from 'vue-router';
 import { onMounted } from 'vue';
 import AppHeader from '../components/common/AppHeader.vue';
 import AppFooter from '../components/common/AppFooter.vue';
-import Container from '../components/common/Container.vue';
+import AppContainer from '../components/common/AppContainer.vue';
 import VerificationPending from '../components/developer/VerificationPending.vue';
 
 export default {
@@ -24,18 +24,22 @@ export default {
   components: {
     AppHeader,
     AppFooter,
-    Container,
+    AppContainer,
     VerificationPending
   },
   setup() {
     const store = useStore();
     const router = useRouter();
-    
+
     onMounted(() => {
       const currentUser = store.getters['auth/currentUser'];
-      
+
       // If user is not logged in or doesn't have a pending developer status, redirect to home
-      if (!currentUser || !currentUser.developerStatus || currentUser.developerStatus !== 'pending') {
+      if (
+        !currentUser ||
+        !currentUser.developerStatus ||
+        currentUser.developerStatus !== 'pending'
+      ) {
         router.push('/');
       }
     });

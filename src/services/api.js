@@ -7,12 +7,15 @@ const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'https://api.example.co
 /**
  * Create headers for API requests
  * @param {boolean} includeAuth - Whether to include auth token in headers
+ * @param {boolean} isFormData - Whether the request contains form data
  * @returns {Object} Headers object
  */
-const createHeaders = (includeAuth = true) => {
-  const headers = {
-    'Content-Type': 'application/json'
-  };
+const createHeaders = (includeAuth = true, isFormData = false) => {
+  const headers = {};
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (includeAuth) {
     const token = localStorage.getItem('token');
@@ -124,9 +127,32 @@ export const del = async (endpoint, includeAuth = true) => {
   }
 };
 
+/**
+ * Upload files with form data
+ * @param {string} endpoint - API endpoint
+ * @param {Object} formData - FormData object with files and other data
+ * @param {boolean} includeAuth - Whether to include auth token
+ * @returns {Promise} Promise resolving to response data
+ */
+export const uploadFiles = async (endpoint, formData, includeAuth = true) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: createHeaders(includeAuth, true),
+      body: formData
+    });
+
+    return handleResponse(response);
+  } catch (error) {
+    console.error('API Upload Error:', error);
+    return Promise.reject(error);
+  }
+};
+
 export default {
   get,
   post,
   put,
-  delete: del
+  delete: del,
+  uploadFiles
 };

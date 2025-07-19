@@ -77,7 +77,8 @@
       <div class="form-group">
         <label for="termsAgreement">
           <input type="checkbox" id="termsAgreement" v-model="form.termsAgreement" required />
-          I agree to the <a href="#" @click.prevent="showTerms = true">Developer Terms and Conditions</a>
+          I agree to the
+          <a href="#" @click.prevent="showTerms = true">Developer Terms and Conditions</a>
         </label>
         <div v-if="errors.termsAgreement" class="form-error">{{ errors.termsAgreement }}</div>
       </div>
@@ -97,27 +98,51 @@
       <div class="terms-content">
         <h3>TransAIRobot Developer Program Terms</h3>
         <p>Last Updated: July 19, 2025</p>
-        
+
         <h4>1. Introduction</h4>
-        <p>These Developer Terms and Conditions ("Terms") govern your participation in the TransAIRobot Developer Program and your use of our developer tools, APIs, and services.</p>
-        
+        <p>
+          These Developer Terms and Conditions ("Terms") govern your participation in the
+          TransAIRobot Developer Program and your use of our developer tools, APIs, and services.
+        </p>
+
         <h4>2. Developer Account</h4>
-        <p>To become a registered developer, you must complete the application process and be approved by TransAIRobot. We reserve the right to approve or reject any application at our discretion.</p>
-        
+        <p>
+          To become a registered developer, you must complete the application process and be
+          approved by TransAIRobot. We reserve the right to approve or reject any application at our
+          discretion.
+        </p>
+
         <h4>3. Application Development</h4>
-        <p>All applications must be developed using TypeScript or Rust and packaged as WebAssembly (WASM) modules. Applications must comply with our technical specifications and quality standards.</p>
-        
+        <p>
+          All applications must be developed using TypeScript or Rust and packaged as WebAssembly
+          (WASM) modules. Applications must comply with our technical specifications and quality
+          standards.
+        </p>
+
         <h4>4. Application Review</h4>
-        <p>All applications submitted to the TransAIRobot Application Store will undergo a review process to ensure they meet our quality, security, and performance standards.</p>
-        
+        <p>
+          All applications submitted to the TransAIRobot Application Store will undergo a review
+          process to ensure they meet our quality, security, and performance standards.
+        </p>
+
         <h4>5. Intellectual Property</h4>
-        <p>You retain ownership of your applications, but grant TransAIRobot a non-exclusive license to distribute your applications through our Application Store.</p>
-        
+        <p>
+          You retain ownership of your applications, but grant TransAIRobot a non-exclusive license
+          to distribute your applications through our Application Store.
+        </p>
+
         <h4>6. Privacy and Data Security</h4>
-        <p>Applications must comply with all applicable privacy laws and our data security requirements. You must provide a privacy policy for any application that collects user data.</p>
-        
+        <p>
+          Applications must comply with all applicable privacy laws and our data security
+          requirements. You must provide a privacy policy for any application that collects user
+          data.
+        </p>
+
         <h4>7. Termination</h4>
-        <p>TransAIRobot reserves the right to terminate your developer account and remove your applications from the Application Store for violations of these Terms.</p>
+        <p>
+          TransAIRobot reserves the right to terminate your developer account and remove your
+          applications from the Application Store for violations of these Terms.
+        </p>
       </div>
       <template #footer>
         <AppButton variant="secondary" @click="showTerms = false">Close</AppButton>
@@ -143,7 +168,7 @@ export default {
   setup() {
     const router = useRouter();
     const store = useStore();
-    
+
     const form = reactive({
       companyName: '',
       website: '',
@@ -157,18 +182,18 @@ export default {
       },
       termsAgreement: false
     });
-    
+
     const errors = reactive({});
     const loading = ref(false);
     const error = ref(null);
     const showTerms = ref(false);
-    
+
     const validateDeveloperForm = () => {
       const validationRules = {
         companyName: { required: true, minLength: 2 },
-        website: { 
+        website: {
           required: true,
-          custom: (value) => {
+          custom: value => {
             if (!isValidUrl(value)) {
               return 'Please enter a valid URL';
             }
@@ -177,8 +202,8 @@ export default {
         },
         description: { required: true, minLength: 50 },
         developerType: { required: true },
-        termsAgreement: { 
-          custom: (value) => {
+        termsAgreement: {
+          custom: value => {
             if (!value) {
               return 'You must agree to the terms and conditions';
             }
@@ -186,30 +211,30 @@ export default {
           }
         }
       };
-      
+
       const newErrors = validateForm(form, validationRules);
-      
+
       // Copy validation errors to reactive errors object
       Object.keys(errors).forEach(key => {
         delete errors[key];
       });
-      
+
       Object.keys(newErrors).forEach(key => {
         errors[key] = newErrors[key];
       });
-      
+
       return Object.keys(newErrors).length === 0;
     };
-    
+
     const handleSubmit = async () => {
       if (!validateDeveloperForm()) {
         return;
       }
-      
+
       try {
         loading.value = true;
         error.value = null;
-        
+
         // This would be replaced with an actual API call
         // Simulating API call with setTimeout
         setTimeout(() => {
@@ -227,15 +252,15 @@ export default {
                 experience: { ...form.experience }
               }
             };
-            
+
             store.dispatch('auth/updateUser', updatedUser);
-            
+
             // Redirect to verification pending page
             router.push('/developer/verification');
           } else {
             error.value = 'You must be logged in to register as a developer';
           }
-          
+
           loading.value = false;
         }, 1500);
       } catch (err) {
@@ -243,7 +268,7 @@ export default {
         error.value = err.message || 'Failed to submit developer application. Please try again.';
       }
     };
-    
+
     return {
       form,
       errors,
@@ -288,12 +313,12 @@ export default {
         box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
       }
     }
-    
+
     textarea.form-control {
       resize: vertical;
       min-height: 100px;
     }
-    
+
     select.form-control {
       appearance: none;
       background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
@@ -309,18 +334,18 @@ export default {
       font-size: 0.875rem;
     }
   }
-  
+
   .checkbox-group {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 0.75rem;
     margin-top: 0.5rem;
-    
+
     .checkbox-item {
       display: flex;
       align-items: center;
-      
-      input[type="checkbox"] {
+
+      input[type='checkbox'] {
         margin-right: 0.5rem;
       }
     }
@@ -341,15 +366,16 @@ export default {
 }
 
 .terms-content {
-  h3, h4 {
+  h3,
+  h4 {
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
-    
+
     &:first-child {
       margin-top: 0;
     }
   }
-  
+
   p {
     margin-bottom: 1rem;
   }

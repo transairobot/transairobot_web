@@ -48,6 +48,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/developer/submit-app',
+    name: 'AppSubmission',
+    component: () => import('../views/AppSubmissionPage.vue'),
+    meta: { requiresAuth: true, developerRequired: true }
+  },
+  {
     path: '/developer/verification',
     name: 'DeveloperVerification',
     component: () => import('../views/DeveloperVerificationPage.vue'),
@@ -70,6 +76,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const isAuthenticated = store.getters['auth/isAuthenticated'];
   const userRole = store.getters['auth/userRole'];
+  const currentUser = store.getters['auth/currentUser'];
 
   // Routes that require authentication
   if (to.matched.some(record => record.meta.requiresAuth)) {
@@ -82,6 +89,20 @@ router.beforeEach((to, from, next) => {
     if (to.matched.some(record => record.meta.roles && record.meta.roles.length)) {
       if (!to.meta.roles.includes(userRole)) {
         next({ name: 'Home' });
+        return;
+      }
+    }
+
+    // Check if developer access is required
+    if (to.matched.some(record => record.meta.developerRequired)) {
+      const isDeveloper =
+        currentUser &&
+        (currentUser.role === 'developer' ||
+          currentUser.role === 'admin' ||
+          currentUser.developerStatus === 'approved');
+
+      if (!isDeveloper) {
+        next({ name: 'DeveloperPortal' });
         return;
       }
     }

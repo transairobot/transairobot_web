@@ -1,7 +1,17 @@
 <template>
   <div class="verification-pending">
     <div class="verification-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="64"
+        height="64"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="12" y1="8" x2="12" y2="12"></line>
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -9,8 +19,8 @@
     </div>
     <h2>Verification Pending</h2>
     <p class="verification-message">
-      Your developer application has been submitted and is currently under review. 
-      This process typically takes 1-3 business days.
+      Your developer application has been submitted and is currently under review. This process
+      typically takes 1-3 business days.
     </p>
     <div class="verification-details">
       <h3>What happens next?</h3>
@@ -20,7 +30,7 @@
         <li>Once approved, you'll receive an email notification</li>
         <li>You'll then have full access to the developer portal</li>
       </ol>
-      
+
       <h3>While you wait</h3>
       <p>You can prepare for development by:</p>
       <ul>
@@ -46,11 +56,11 @@ export default {
   },
   setup() {
     const router = useRouter();
-    
+
     const goHome = () => {
       router.push('/');
     };
-    
+
     return {
       goHome
     };
@@ -64,17 +74,17 @@ export default {
   margin: 0 auto;
   text-align: center;
   padding: 2rem 1rem;
-  
+
   .verification-icon {
     margin-bottom: 1.5rem;
     color: var(--accent-primary);
-    
+
     svg {
       width: 80px;
       height: 80px;
     }
   }
-  
+
   h2 {
     font-size: 1.75rem;
     margin-bottom: 1rem;
@@ -84,40 +94,41 @@ export default {
     background-clip: text;
     text-fill-color: transparent;
   }
-  
+
   .verification-message {
     font-size: 1.1rem;
     margin-bottom: 2rem;
     color: var(--text-secondary);
   }
-  
+
   .verification-details {
     text-align: left;
     background: var(--bg-secondary);
     border-radius: 0.75rem;
     padding: 1.5rem;
     margin-bottom: 2rem;
-    
+
     h3 {
       margin-top: 1.5rem;
       margin-bottom: 0.75rem;
       font-size: 1.25rem;
-      
+
       &:first-child {
         margin-top: 0;
       }
     }
-    
-    ol, ul {
+
+    ol,
+    ul {
       padding-left: 1.5rem;
       margin-bottom: 1.5rem;
-      
+
       li {
         margin-bottom: 0.5rem;
       }
     }
   }
-  
+
   .verification-actions {
     margin-top: 2rem;
   }
