@@ -108,6 +108,13 @@
       </div>
     </main>
     <AppFooter />
+
+    <!-- Installation Modal -->
+    <InstallationModal
+      v-model:show="showInstallModal"
+      :app="app"
+      @installation-complete="handleInstallationComplete"
+    />
   </div>
 </template>
 
@@ -120,6 +127,7 @@ import AppFooter from '../components/common/AppFooter.vue';
 import LoadingState from '../components/common/LoadingState.vue';
 import ErrorState from '../components/common/ErrorState.vue';
 import { renderMarkdown } from '../utils/markdown';
+import InstallationModal from '../components/robots/InstallationModal.vue';
 
 export default {
   name: 'AppDetailPage',
@@ -127,7 +135,8 @@ export default {
     AppHeader,
     AppFooter,
     LoadingState,
-    ErrorState
+    ErrorState,
+    InstallationModal
   },
   setup() {
     const route = useRoute();
@@ -174,10 +183,19 @@ export default {
       router.push('/app-store');
     };
 
+    const showInstallModal = ref(false);
+
     const installApp = () => {
-      // This would typically open a dialog to select a robot
-      // For now, just show an alert
-      alert(`Installing ${app.value.name}...`);
+      showInstallModal.value = true;
+    };
+
+    const handleInstallationComplete = result => {
+      if (result.success) {
+        // You could show a toast notification here
+        console.log(`Successfully installed ${app.value.name} on robot ${result.robotId}`);
+      } else {
+        console.error('Installation failed:', result.error);
+      }
     };
 
     const shareApp = () => {
@@ -205,7 +223,9 @@ export default {
       formatDownloads,
       goBack,
       installApp,
-      shareApp
+      shareApp,
+      showInstallModal,
+      handleInstallationComplete
     };
   }
 };

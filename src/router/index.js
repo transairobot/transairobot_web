@@ -45,7 +45,13 @@ const routes = [
     path: '/developer',
     name: 'DeveloperPortal',
     component: () => import('../views/DeveloperPortalPage.vue'),
-    meta: { requiresAuth: true, roles: ['developer', 'admin'] }
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/developer/verification',
+    name: 'DeveloperVerification',
+    component: () => import('../views/DeveloperVerificationPage.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/admin',
