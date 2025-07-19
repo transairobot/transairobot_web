@@ -24,21 +24,34 @@
         </AppCarousel>
       </div>
     </AppSection>
-    <AppSection title="Robot Operating System" background="secondary" spacing="normal">
-      <div class="os-section">
-        <div class="os-header">
-          <h3 class="gradient-text">Develop Once, Run Anywhere</h3>
-          <p class="os-tagline">
-            Our revolutionary robot operating system enables seamless cross-platform development
-          </p>
-        </div>
+    <AppSection title="Robot Operating System" spacing="normal">
+      <div class="os-container">
+        <div class="os-section">
+          <div class="os-header">
+            <h3 class="gradient-text">Develop Once, Run Anywhere</h3>
+            <p class="os-tagline">
+              Our revolutionary robot operating system enables seamless cross-platform development
+            </p>
+          </div>
 
-        <div class="os-content">
-          <div class="os-image">
-            <div class="code-block">
-              <pre>
-                <code>
-// TypeScript Robot App Example
+          <div class="os-content">
+            <div class="os-image">
+              <div class="code-tabs">
+                <button
+                  @click="activeCodeExample = 'ts'"
+                  :class="{ active: activeCodeExample === 'ts' }"
+                >
+                  TypeScript
+                </button>
+                <button
+                  @click="activeCodeExample = 'rust'"
+                  :class="{ active: activeCodeExample === 'rust' }"
+                >
+                  Rust
+                </button>
+              </div>
+              <div v-if="activeCodeExample === 'ts'" class="code-block">
+                <pre><code>// TypeScript Robot App Example
 import { Robot, Sensors, Motion } from 'transai-os';
 
 export class NavigationApp {
@@ -57,34 +70,58 @@ export class NavigationApp {
     // that supports TransAIRobot OS
   }
 }
-                </code>
-              </pre>
+                </code></pre>
+              </div>
+              <div v-if="activeCodeExample === 'rust'" class="code-block">
+                <pre><code>// Rust Robot App Example
+use transai_os::{Robot, Sensors, Motion, Point};
+
+pub struct NavigationApp {
+    sensors: Sensors,
+    motion: Motion,
+}
+
+impl NavigationApp {
+    pub fn new(robot: &Robot) -> Self {
+        Self {
+            sensors: robot.get_sensors(),
+            motion: robot.get_motion(),
+        }
+    }
+
+    pub async fn navigate(&self, dest: Point) {
+        // Implementation works on any robot platform
+        // that supports TransAIRobot OS
+    }
+}
+                </code></pre>
+              </div>
             </div>
-          </div>
 
-          <div class="os-description">
-            <p>
-              Our robot operating system allows developers to create applications using TypeScript
-              and Rust that can be compiled to WebAssembly (WASM) modules, enabling them to run on
-              any robot platform that supports our runtime.
-            </p>
-            <p>
-              This "develop once, run anywhere" approach significantly reduces development time and
-              allows for greater compatibility across different robot models and manufacturers.
-            </p>
+            <div class="os-description">
+              <p>
+                Our robot operating system allows developers to create applications using TypeScript
+                and Rust that can be compiled to WebAssembly (WASM) modules, enabling them to run on
+                any robot platform that supports our runtime.
+              </p>
+              <p>
+                This "develop once, run anywhere" approach significantly reduces development time
+                and allows for greater compatibility across different robot models and
+                manufacturers.
+              </p>
 
-            <AppGrid columns="3" gap="normal" class="info-features">
-              <AppGridItem v-for="(feature, index) in osFeatures" :key="index">
-                <div class="feature">
-                  <h4>{{ feature.title }}</h4>
-                  <p>{{ feature.description }}</p>
-                </div>
-              </AppGridItem>
-            </AppGrid>
+              <AppGrid columns="3" gap="normal" class="info-features">
+                <AppGridItem v-for="(feature, index) in osFeatures" :key="index">
+                  <div class="feature">
+                    <h4>{{ feature.title }}</h4>
+                    <p>{{ feature.description }}</p>
+                  </div>
+                </AppGridItem>
+              </AppGrid>
 
-            <div class="os-cta">
-              <button class="os-btn primary">Download SDK</button>
-              <button class="os-btn secondary">View Documentation</button>
+              <div class="os-cta">
+                <button class="os-btn secondary">View Documentation</button>
+              </div>
             </div>
           </div>
         </div>
@@ -111,6 +148,7 @@ export default {
   },
   data() {
     return {
+      activeCodeExample: 'ts',
       featuredApps: [
         {
           icon: '🤖',
@@ -203,7 +241,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.featured-apps {
+.featured-apps,
+.os-container {
   padding: 3rem;
   border-radius: 1rem;
   background-color: var(--bg-secondary);
@@ -225,7 +264,6 @@ export default {
   border-radius: 0.75rem;
   text-align: center;
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-  // box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: visible;
   display: flex;
@@ -251,7 +289,6 @@ export default {
 
   &:hover {
     transform: translateY(-5px);
-    // box-shadow: 0 -10px 30px -10px rgba(var(--accent-primary-rgb), 0.25);
 
     &::before {
       opacity: 1;
@@ -287,5 +324,80 @@ export default {
     flex-grow: 1; /* Allow description to take up available space */
   }
 }
-/* Style content remains the same */
+
+.code-tabs {
+  display: flex;
+  margin-bottom: -1px;
+
+  button {
+    background: transparent;
+    border: 1px solid var(--divider);
+    border-bottom: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-radius: 0.5rem 0.5rem 0 0;
+    margin-right: 0.25rem;
+    position: relative;
+    bottom: -1px;
+
+    &.active {
+      background: var(--code-bg);
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--code-bg);
+    }
+  }
+}
+
+.code-block {
+  border: 1px solid var(--divider);
+  border-radius: 0 0.5rem 0.5rem 0.5rem;
+}
+
+.os-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  border: 2px solid transparent;
+
+  &.primary {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border-color: transparent;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(var(--accent-primary-rgb), 0.3);
+    }
+  }
+
+  &.secondary {
+    background: transparent;
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+
+    &:hover {
+      background: rgba(var(--accent-primary-rgb), 0.1);
+      transform: translateY(-2px);
+    }
+  }
+}
+
+.os-description p + p {
+  margin-top: 1.5rem;
+}
+
+.os-description > p {
+  text-indent: 2em;
+}
+
+.info-features {
+  margin-top: 2.5rem;
+}
+
+.os-cta {
+  margin-top: 2.5rem;
+}
 </style>
