@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import store from '../store';
+import { lazyLoadView } from '@/utils/lazyLoad';
 
 // Initialize auth state from localStorage
 const initializeAuth = async () => {
@@ -24,101 +25,109 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('../views/HomePage.vue')
+    component: lazyLoadView('HomePage')
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/LoginPage.vue'),
+    component: lazyLoadView('LoginPage'),
     meta: { guestOnly: true }
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('../views/RegisterPage.vue'),
+    component: lazyLoadView('RegisterPage'),
     meta: { guestOnly: true }
   },
   {
     path: '/app-store',
     name: 'AppStore',
-    component: () => import('../views/AppStorePage.vue')
+    component: lazyLoadView('AppStorePage')
   },
   {
     path: '/app/:id',
     name: 'AppDetail',
-    component: () => import('../views/AppDetailPage.vue')
+    component: lazyLoadView('AppDetailPage')
   },
   {
     path: '/my-robots',
     name: 'MyRobots',
-    component: () => import('../views/MyRobotsPage.vue'),
+    component: lazyLoadView('MyRobotsPage'),
     meta: { requiresAuth: true }
   },
   {
     path: '/robot/:id',
     name: 'RobotDetail',
-    component: () => import('../views/RobotDetailPage.vue'),
+    component: lazyLoadView('RobotDetailPage'),
     meta: { requiresAuth: true }
   },
   {
     path: '/developer',
     name: 'DeveloperPortal',
-    component: () => import('../views/DeveloperPortalPage.vue'),
+    component: lazyLoadView('DeveloperPortalPage'),
     meta: { requiresAuth: true }
   },
   {
     path: '/developer/submit-app',
     name: 'AppSubmission',
-    component: () => import('../views/AppSubmissionPage.vue'),
+    component: lazyLoadView('AppSubmissionPage'),
     meta: { requiresAuth: true, developerRequired: true }
   },
   {
     path: '/developer/verification',
     name: 'DeveloperVerification',
-    component: () => import('../views/DeveloperVerificationPage.vue'),
+    component: lazyLoadView('DeveloperVerificationPage'),
     meta: { requiresAuth: true }
   },
   {
     path: '/profile',
     name: 'UserProfile',
-    component: () => import('../views/UserProfilePage.vue'),
+    component: lazyLoadView('UserProfilePage'),
     meta: { requiresAuth: true }
   },
   {
     path: '/forgot-password',
     name: 'ForgotPassword',
-    component: () => import('../views/ForgotPasswordPage.vue'),
+    component: lazyLoadView('ForgotPasswordPage'),
     meta: { guestOnly: true }
   },
   {
     path: '/reset-password',
     name: 'ResetPassword',
-    component: () => import('../views/ResetPasswordPage.vue'),
+    component: lazyLoadView('ResetPasswordPage'),
     meta: { guestOnly: true }
   },
   {
     path: '/admin',
     name: 'AdminDashboard',
-    component: () => import('../views/AdminDashboardPage.vue'),
+    component: lazyLoadView('AdminDashboardPage'),
     meta: { requiresAuth: true, roles: ['admin'] }
   },
   {
     path: '/admin/review',
     name: 'AdminAppReview',
-    component: () => import('../views/AdminAppReviewPage.vue'),
+    component: lazyLoadView('AdminAppReviewPage'),
     meta: { requiresAuth: true, roles: ['admin'] }
   },
   {
     path: '/admin/store',
     name: 'AdminStoreManagement',
-    component: () => import('../views/AdminStoreManagementPage.vue'),
+    component: lazyLoadView('AdminStoreManagementPage'),
     meta: { requiresAuth: true, roles: ['admin'] }
   }
 ];
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
-  routes
+  routes,
+  // Scroll behavior for better UX
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { top: 0 };
+    }
+  }
 });
 
 // Navigation guards

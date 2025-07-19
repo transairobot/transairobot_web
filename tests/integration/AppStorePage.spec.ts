@@ -213,7 +213,9 @@ describe('AppStorePage.vue', () => {
 
     // In a real component, we would need to wait for the next tick
     // but in our simplified wrapper, we can just update the filteredApps
-    wrapper.vm.filteredApps = wrapper.vm.apps.filter((app: App) => app.category.includes('navigation'));
+    wrapper.vm.filteredApps = wrapper.vm.apps.filter((app: App) =>
+      app.category.includes('navigation')
+    );
 
     expect(wrapper.vm.filteredApps.length).toBe(1);
     expect(wrapper.vm.filteredApps[0].name).toBe('Navigation System');

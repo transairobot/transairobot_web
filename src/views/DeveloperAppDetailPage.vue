@@ -2,7 +2,7 @@
   <div class="developer-app-detail-page">
     <AppHeader />
     <main>
-      <Container>
+      <AppContainer>
         <div v-if="loading" class="loading-container">
           <LoadingState message="Loading application details..." />
         </div>
@@ -81,7 +81,7 @@
           </p>
           <AppButton @click="goBack" variant="primary">Back to Dashboard</AppButton>
         </div>
-      </Container>
+      </AppContainer>
     </main>
     <AppFooter />
   </div>
@@ -92,7 +92,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppHeader from '../components/common/AppHeader.vue';
 import AppFooter from '../components/common/AppFooter.vue';
-import Container from '../components/common/Container.vue';
+import AppContainer from '../components/common/AppContainer.vue';
 import AppButton from '../components/common/AppButton.vue';
 import LoadingState from '../components/common/LoadingState.vue';
 import AppAnalytics from '../components/developer/AppAnalytics.vue';
@@ -104,7 +104,7 @@ export default {
   components: {
     AppHeader,
     AppFooter,
-    Container,
+    AppContainer,
     AppButton,
     LoadingState,
     AppAnalytics,

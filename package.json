@@ -9,10 +9,12 @@
     "type-check": "vue-tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "analyze": "vue-cli-service build --report"
   },
   "dependencies": {
     "core-js": "^3.8.3",
+    "register-service-worker": "^1.7.2",
     "vue": "^3.2.13",
     "vue-router": "^4.0.0",
     "vuex": "^4.0.0"
@@ -43,7 +45,8 @@
     "typescript": "^5.8.3",
     "vite": "^7.0.5",
     "vitest": "^3.2.4",
-    "vue-tsc": "^3.0.3"
+    "vue-tsc": "^3.0.3",
+    "webpack-bundle-analyzer": "^4.9.1"
   },
   "eslintConfig": {
     "root": true,
