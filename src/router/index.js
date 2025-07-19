@@ -114,6 +114,51 @@ const routes = [
     name: 'AdminStoreManagement',
     component: lazyLoadView('AdminStoreManagementPage'),
     meta: { requiresAuth: true, roles: ['admin'] }
+  },
+  {
+    path: '/documentation',
+    name: 'Documentation',
+    component: lazyLoadView('documentation/DocumentationPage'),
+    meta: { title: 'Documentation' }
+  },
+  {
+    path: '/documentation/category/:categoryId',
+    name: 'DocumentationCategory',
+    component: lazyLoadView('documentation/DocumentationPage'),
+    meta: { title: 'Documentation' }
+  },
+  {
+    path: '/documentation/:documentId',
+    name: 'DocumentationDetail',
+    component: lazyLoadView('documentation/DocumentationPage'),
+    meta: { title: 'Documentation' },
+    props: true
+  },
+  {
+    path: '/documentation/category/:categoryId/:documentId',
+    name: 'DocumentationCategoryDetail',
+    component: lazyLoadView('documentation/DocumentationPage'),
+    meta: { title: 'Documentation' },
+    props: true
+  },
+  {
+    path: '/documentation/version/:versionId',
+    name: 'DocumentationVersion',
+    component: lazyLoadView('documentation/DocumentationPage'),
+    meta: { title: 'Documentation' },
+    props: true
+  },
+  {
+    path: '/admin/documentation',
+    name: 'DocumentationManager',
+    component: lazyLoadView('documentation/DocumentationManagerPage'),
+    meta: { requiresAuth: true, roles: ['admin'], title: 'Documentation Manager' }
+  },
+  {
+    path: '/admin/documentation/editor/:documentId?',
+    name: 'DocumentationEditor',
+    component: lazyLoadView('documentation/DocumentationEditor'),
+    meta: { requiresAuth: true, roles: ['admin'], title: 'Documentation Editor' }
   }
 ];
 
@@ -171,6 +216,57 @@ router.beforeEach((to, from, next) => {
     if (isAuthenticated) {
       next({ name: 'Home' });
       return;
+    }
+  }
+
+  // Check access control for documentation
+  if (to.path.startsWith('/documentation') && to.params.documentId) {
+    const documentId = to.params.documentId;
+    const document = store.getters['documentation/getDocumentById'](documentId);
+
+    // If document exists and has access restrictions
+    if (document && document.accessLevel !== 'public') {
+      // For registered users only
+      if (document.accessLevel === 'registered' && !isAuthenticated) {
+        next({
+          name: 'Login',
+          query: {
+            redirect: to.fullPath,
+            message: 'You need to log in to access this documentation'
+          }
+        });
+        return;
+      }
+
+      // For admin only
+      if (document.accessLevel === 'admin' && userRole !== 'admin') {
+        next({
+          name: 'Documentation',
+          query: {
+            error: 'You do not have permission to access this documentation'
+          }
+        });
+        return;
+      }
+
+      // For developer only
+      if (document.accessLevel === 'developer') {
+        const isDeveloper =
+          currentUser &&
+          (currentUser.role === 'developer' ||
+            currentUser.role === 'admin' ||
+            currentUser.developerStatus === 'approved');
+
+        if (!isDeveloper) {
+          next({
+            name: 'Documentation',
+            query: {
+              error: 'You need developer access to view this documentation'
+            }
+          });
+          return;
+        }
+      }
     }
   }
 

@@ -7,7 +7,14 @@ module.exports = defineConfig({
   transpileDependencies: true,
   publicPath: process.env.NODE_ENV === 'production' ? '/' : '/',
   productionSourceMap: process.env.NODE_ENV !== 'production',
+
+  pwa: {
+    workboxPluginMode: 'InjectManifest',
+    swSrc: 'src/sw.js',
+  },
+
   
+
   css: {
     loaderOptions: {
       scss: {
@@ -19,7 +26,7 @@ module.exports = defineConfig({
     // Extract CSS in production
     extract: process.env.NODE_ENV === 'production'
   },
-  
+
   // Configure webpack for code splitting and optimization
   configureWebpack: config => {
     const configurations = {
@@ -34,7 +41,11 @@ module.exports = defineConfig({
               name(module) {
                 // Get the name. E.g. node_modules/packageName/not/this/part.js
                 // or node_modules/packageName
-                const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
+                const match = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/);
+                if (!match) {
+                  return 'vendor.other';
+                }
+                const packageName = match[1];
                 // npm package names are URL-safe, but some servers don't like @ symbols
                 return `vendor.${packageName.replace('@', '')}`;
               },
@@ -55,40 +66,11 @@ module.exports = defineConfig({
         maxAssetSize: 512000
       }
     };
-    
+
     // Add production-only plugins
     if (process.env.NODE_ENV === 'production') {
       // Add service worker for offline support
       configurations.plugins = [
-        new WorkboxPlugin.GenerateSW({
-          clientsClaim: true,
-          skipWaiting: true,
-          exclude: [/\.map$/, /asset-manifest\.json$/],
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/api\.transairobot\.com\/api/,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'api-cache',
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 // 24 hours
-                }
-              }
-            },
-            {
-              urlPattern: /\.(?:png|jpg|jpeg|svg|gif)$/,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'images-cache',
-                expiration: {
-                  maxEntries: 60,
-                  maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
-                }
-              }
-            }
-          ]
-        }),
         // Compress assets
         new CompressionPlugin({
           filename: '[path][base].gz',
@@ -98,16 +80,16 @@ module.exports = defineConfig({
           minRatio: 0.8
         })
       ];
-      
+
       // Add bundle analyzer only when explicitly requested
       if (process.env.ANALYZE) {
         configurations.plugins.push(new BundleAnalyzerPlugin());
       }
     }
-    
+
     return configurations;
   },
-  
+
   // Chain webpack configuration
   chainWebpack: config => {
     // Disable prefetch for non-critical resources
@@ -127,7 +109,7 @@ module.exports = defineConfig({
     } else {
       config.devtool('eval-cheap-module-source-map');
     }
-    
+
     // Image optimization
     config.module
       .rule('images')
