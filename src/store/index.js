@@ -4,7 +4,6 @@ import apps from './modules/apps';
 import robots from './modules/robots';
 import developer from './modules/developer';
 import admin from './modules/admin';
-import documentation from './modules/documentation';
 import { setTheme, toggleTheme as toggleThemeUtil } from '../utils/theme';
 
 export default createStore({
@@ -49,7 +48,6 @@ export default createStore({
     apps,
     robots,
     developer,
-    admin,
-    documentation
+    admin
   }
 });

@@ -7,7 +7,6 @@ import applicationStoreService from './application-store.service';
 import robotManagementService from './robot-management.service';
 import developerService from './developer.service';
 import adminService from './admin.service';
-import documentationService from './documentation.service';
 import notificationService from './notification.service';
 import errorHandler from './error-handler.service';
 import transformer from './transformer.service';
@@ -20,7 +19,6 @@ export {
   robotManagementService,
   developerService,
   adminService,
-  documentationService,
   notificationService,
   errorHandler,
   transformer
@@ -34,7 +32,6 @@ export default {
   robotManagement: robotManagementService,
   developer: developerService,
   admin: adminService,
-  documentation: documentationService,
   notification: notificationService,
   errorHandler,
   transformer
