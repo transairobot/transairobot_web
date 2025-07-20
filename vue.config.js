@@ -63,6 +63,7 @@ module.exports = defineConfig({
         new WorkboxPlugin.GenerateSW({
           clientsClaim: true,
           skipWaiting: true,
+          swDest: 'transairobot-sw.js', // Changed service worker filename
           exclude: [/\.map$/, /asset-manifest\.json$/],
           runtimeCaching: [
             {
