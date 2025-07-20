@@ -7,7 +7,7 @@ module.exports = defineConfig({
   transpileDependencies: true,
   publicPath: process.env.NODE_ENV === 'production' ? '/' : '/',
   productionSourceMap: process.env.NODE_ENV !== 'production',
-  
+
   css: {
     loaderOptions: {
       scss: {
@@ -19,7 +19,7 @@ module.exports = defineConfig({
     // Extract CSS in production
     extract: process.env.NODE_ENV === 'production'
   },
-  
+
   // Configure webpack for code splitting and optimization
   configureWebpack: config => {
     const configurations = {
@@ -55,7 +55,7 @@ module.exports = defineConfig({
         maxAssetSize: 512000
       }
     };
-    
+
     // Add production-only plugins
     if (process.env.NODE_ENV === 'production') {
       // Add service worker for offline support
@@ -98,16 +98,16 @@ module.exports = defineConfig({
           minRatio: 0.8
         })
       ];
-      
+
       // Add bundle analyzer only when explicitly requested
       if (process.env.ANALYZE) {
         configurations.plugins.push(new BundleAnalyzerPlugin());
       }
     }
-    
+
     return configurations;
   },
-  
+
   // Chain webpack configuration
   chainWebpack: config => {
     // Disable prefetch for non-critical resources
@@ -127,7 +127,7 @@ module.exports = defineConfig({
     } else {
       config.devtool('eval-cheap-module-source-map');
     }
-    
+
     // Image optimization
     config.module
       .rule('images')

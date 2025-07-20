@@ -62,9 +62,6 @@ export default {
           }
         }
 
-        // Try to refresh token if needed
-        await store.dispatch('auth/refreshToken');
-
         return true;
       } catch (err) {
         error.value = err.message || 'Authentication error';

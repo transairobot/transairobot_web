@@ -135,20 +135,12 @@ export default {
           password: form.value.password
         };
 
-        // Call the authentication service
-        const authService = await import('../services/auth.service').then(module => module.default);
-        const response = await authService.register(userData);
-
-        // Store the token and user data
-        store.dispatch('auth/login', {
-          token: response.token,
-          user: response.user
-        });
+        // 使用 store action 进行注册
+        await store.dispatch('auth/register', userData);
 
         // Redirect to home page
         router.push('/');
       } catch (err) {
-        loading.value = false;
         error.value = err.message || 'Failed to register. Please try again.';
       } finally {
         loading.value = false;

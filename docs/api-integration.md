@@ -64,20 +64,10 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const originalRequest = error.config;
-    
-    // Handle token refresh for 401 errors
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        await store.dispatch('auth/refreshToken');
-        const token = store.getters['auth/token'];
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        store.dispatch('auth/logout');
-        return Promise.reject(refreshError);
-      }
+    // Handle 401 errors by redirecting to login
+    if (error.response?.status === 401) {
+      store.dispatch('auth/logout');
+      return Promise.reject(error);
     }
     
     // Handle other errors
@@ -112,14 +102,6 @@ export const AuthService = {
    */
   register(userData: RegisterRequest): Promise<AuthResponse> {
     return apiClient.post('/auth/register', userData)
-      .then(response => response.data);
-  },
-  
-  /**
-   * Refresh the access token using a refresh token
-   */
-  refreshToken(): Promise<AuthResponse> {
-    return apiClient.post('/auth/refresh')
       .then(response => response.data);
   },
   

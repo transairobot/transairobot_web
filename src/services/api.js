@@ -8,31 +8,10 @@ import notificationService from './notification.service';
 
 // API configuration
 const API_CONFIG = {
-  baseUrl: process.env.VUE_APP_API_BASE_URL || 'https://api.example.com',
+  baseUrl: process.env.VUE_APP_API_URL || 'https://api.example.com',
   timeout: 30000, // 30 seconds
   retryAttempts: 2,
   retryDelay: 1000 // 1 second
-};
-
-// Flag to prevent multiple token refresh attempts
-let isRefreshing = false;
-let failedQueue = [];
-
-/**
- * Process failed requests queue
- * @param {string} token - New token
- * @param {boolean} isSuccess - Whether token refresh was successful
- */
-const processQueue = (token, isSuccess) => {
-  failedQueue.forEach(prom => {
-    if (isSuccess) {
-      prom.resolve(token);
-    } else {
-      prom.reject(new Error('Token refresh failed'));
-    }
-  });
-
-  failedQueue = [];
 };
 
 /**
@@ -65,11 +44,11 @@ const createHeaders = (includeAuth = true, isFormData = false) => {
 /**
  * Handle API response
  * @param {Response} response - Fetch response object
- * @param {Function} originalRequest - Function to retry the original request
  * @param {string} endpoint - API endpoint
+ * @param {boolean} returnFullResponse - Whether to return full response object
  * @returns {Promise} Promise resolving to response data
  */
-const handleResponse = async (response, originalRequest, endpoint) => {
+const handleResponse = async (response, endpoint, returnFullResponse = false) => {
   // Handle different response types
   let data;
   const contentType = response.headers.get('content-type');
@@ -89,59 +68,26 @@ const handleResponse = async (response, originalRequest, endpoint) => {
   // Handle successful responses
   if (response.ok) {
     // Transform response data
-    return transformer.transformResponse(data, endpoint);
+    const transformedData = transformer.transformResponse(data, endpoint);
+
+    // Return full response object if requested (for accessing headers)
+    if (returnFullResponse) {
+      return {
+        data: transformedData,
+        headers: response.headers,
+        status: response.status
+      };
+    }
+
+    return transformedData;
   }
 
   // Handle authentication errors
   if (response.status === 401) {
-    // If token refresh endpoint returns 401, logout
-    if (endpoint.includes('/auth/refresh-token')) {
-      store.dispatch('auth/logout');
-      notificationService.error('Session expired. Please login again.');
-      return Promise.reject(new Error('Session expired. Please login again.'));
-    }
-
-    // Try to refresh token
-    if (!isRefreshing) {
-      isRefreshing = true;
-
-      return store
-        .dispatch('auth/refreshToken')
-        .then(success => {
-          isRefreshing = false;
-
-          if (success) {
-            // Process queued requests with new token
-            processQueue(localStorage.getItem('token'), true);
-            // Retry original request
-            return originalRequest();
-          } else {
-            // Token refresh failed, logout
-            processQueue(null, false);
-            store.dispatch('auth/logout');
-            notificationService.error('Session expired. Please login again.');
-            return Promise.reject(new Error('Session expired. Please login again.'));
-          }
-        })
-        .catch(error => {
-          isRefreshing = false;
-          processQueue(null, false);
-          store.dispatch('auth/logout');
-          notificationService.error('Authentication failed. Please login again.');
-          return Promise.reject(error);
-        });
-    } else {
-      // Queue failed request
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then(token => {
-          return originalRequest();
-        })
-        .catch(err => {
-          return Promise.reject(err);
-        });
-    }
+    // For auth endpoints, don't try to refresh token
+    store.dispatch('auth/logout');
+    notificationService.error('Session expired. Please login again.');
+    return Promise.reject(new Error('Session expired. Please login again.'));
   }
 
   // Handle specific error status codes
@@ -184,7 +130,8 @@ export const get = async (endpoint, options = {}) => {
     includeAuth = true,
     showErrorNotification = true,
     retry = API_CONFIG.retryAttempts,
-    params = null
+    params = null,
+    returnFullResponse = false
   } = options;
 
   // Build URL with query parameters
@@ -210,11 +157,12 @@ export const get = async (endpoint, options = {}) => {
       const response = await fetch(url, {
         method: 'GET',
         headers: createHeaders(includeAuth),
+        credentials: 'include', // 支持 cookie
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
-      return handleResponse(response, executeRequest, endpoint);
+      return handleResponse(response, endpoint, returnFullResponse);
     } catch (error) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
@@ -244,7 +192,8 @@ export const post = async (endpoint, data, options = {}) => {
   const {
     includeAuth = true,
     showErrorNotification = true,
-    retry = API_CONFIG.retryAttempts
+    retry = API_CONFIG.retryAttempts,
+    returnFullResponse = false
   } = options;
 
   // Transform request data
@@ -259,11 +208,12 @@ export const post = async (endpoint, data, options = {}) => {
         method: 'POST',
         headers: createHeaders(includeAuth),
         body: JSON.stringify(transformedData),
+        credentials: 'include', // 支持 cookie
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
-      return handleResponse(response, executeRequest, endpoint);
+      return handleResponse(response, endpoint, returnFullResponse);
     } catch (error) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
@@ -293,7 +243,8 @@ export const put = async (endpoint, data, options = {}) => {
   const {
     includeAuth = true,
     showErrorNotification = true,
-    retry = API_CONFIG.retryAttempts
+    retry = API_CONFIG.retryAttempts,
+    returnFullResponse = false
   } = options;
 
   // Transform request data
@@ -308,11 +259,12 @@ export const put = async (endpoint, data, options = {}) => {
         method: 'PUT',
         headers: createHeaders(includeAuth),
         body: JSON.stringify(transformedData),
+        credentials: 'include', // 支持 cookie
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
-      return handleResponse(response, executeRequest, endpoint);
+      return handleResponse(response, endpoint, returnFullResponse);
     } catch (error) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
@@ -342,7 +294,8 @@ export const patch = async (endpoint, data, options = {}) => {
   const {
     includeAuth = true,
     showErrorNotification = true,
-    retry = API_CONFIG.retryAttempts
+    retry = API_CONFIG.retryAttempts,
+    returnFullResponse = false
   } = options;
 
   // Transform request data
@@ -357,11 +310,12 @@ export const patch = async (endpoint, data, options = {}) => {
         method: 'PATCH',
         headers: createHeaders(includeAuth),
         body: JSON.stringify(transformedData),
+        credentials: 'include', // 支持 cookie
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
-      return handleResponse(response, executeRequest, endpoint);
+      return handleResponse(response, endpoint, returnFullResponse);
     } catch (error) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
@@ -390,7 +344,8 @@ export const del = async (endpoint, options = {}) => {
   const {
     includeAuth = true,
     showErrorNotification = true,
-    retry = API_CONFIG.retryAttempts
+    retry = API_CONFIG.retryAttempts,
+    returnFullResponse = false
   } = options;
 
   const executeRequest = async () => {
@@ -401,11 +356,12 @@ export const del = async (endpoint, options = {}) => {
       const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
         method: 'DELETE',
         headers: createHeaders(includeAuth),
+        credentials: 'include', // 支持 cookie
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
-      return handleResponse(response, executeRequest, endpoint);
+      return handleResponse(response, endpoint, returnFullResponse);
     } catch (error) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
@@ -436,7 +392,8 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
     includeAuth = true,
     showErrorNotification = true,
     retry = API_CONFIG.retryAttempts,
-    onProgress = null
+    onProgress = null,
+    returnFullResponse = false
   } = options;
 
   const executeRequest = async () => {
@@ -462,7 +419,19 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
               let data;
               try {
                 data = JSON.parse(xhr.responseText);
-                resolve(transformer.transformResponse(data, endpoint));
+                const transformedData = transformer.transformResponse(data, endpoint);
+
+                if (returnFullResponse) {
+                  resolve({
+                    data: transformedData,
+                    headers: {
+                      get: name => xhr.getResponseHeader(name)
+                    },
+                    status: xhr.status
+                  });
+                } else {
+                  resolve(transformedData);
+                }
               } catch (e) {
                 resolve(xhr.responseText);
               }
@@ -479,30 +448,8 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
               error.status = xhr.status;
 
               if (xhr.status === 401) {
-                // Handle auth errors
-                if (endpoint.includes('/auth/refresh-token')) {
-                  store.dispatch('auth/logout');
-                  notificationService.error('Session expired. Please login again.');
-                } else {
-                  // Try to refresh token and retry
-                  store
-                    .dispatch('auth/refreshToken')
-                    .then(success => {
-                      if (success) {
-                        executeRequest().then(resolve).catch(reject);
-                      } else {
-                        store.dispatch('auth/logout');
-                        notificationService.error('Session expired. Please login again.');
-                        reject(error);
-                      }
-                    })
-                    .catch(() => {
-                      store.dispatch('auth/logout');
-                      notificationService.error('Authentication failed. Please login again.');
-                      reject(error);
-                    });
-                  return;
-                }
+                store.dispatch('auth/logout');
+                notificationService.error('Session expired. Please login again.');
               }
 
               errorHandler.handleError(error, showErrorNotification);
@@ -531,6 +478,7 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
           });
 
           xhr.open('POST', `${API_CONFIG.baseUrl}${endpoint}`);
+          xhr.withCredentials = true; // 支持 cookie
 
           // Set headers
           const headers = createHeaders(includeAuth, true);
@@ -546,11 +494,12 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
           method: 'POST',
           headers: createHeaders(includeAuth, true),
           body: formData,
+          credentials: 'include', // 支持 cookie
           signal: controller.signal
         });
 
         clearTimeout(timeoutId);
-        return handleResponse(response, executeRequest, endpoint);
+        return handleResponse(response, endpoint, returnFullResponse);
       }
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -608,6 +557,7 @@ export const downloadFile = async (endpoint, filename, options = {}) => {
       const response = await fetch(url, {
         method: 'GET',
         headers: createHeaders(includeAuth),
+        credentials: 'include', // 支持 cookie
         signal: controller.signal
       });
 
@@ -615,7 +565,7 @@ export const downloadFile = async (endpoint, filename, options = {}) => {
 
       if (!response.ok) {
         // Handle error responses
-        return handleResponse(response, executeRequest, endpoint);
+        return handleResponse(response, endpoint);
       }
 
       // Get blob from response

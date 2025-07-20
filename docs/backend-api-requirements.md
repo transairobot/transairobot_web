@@ -17,7 +17,6 @@ The base URL for all API endpoints is:
 |--------|----------|-------------|
 | POST | `/auth/login` | User login |
 | POST | `/auth/register` | User registration |
-| POST | `/auth/refresh` | Refresh access token |
 | POST | `/auth/logout` | User logout |
 | GET | `/auth/me` | Get current user profile |
 
@@ -37,8 +36,6 @@ POST /auth/login
 Response:
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": "123",
     "email": "user@example.com",
@@ -46,6 +43,10 @@ Response:
     "role": "user"
   }
 }
+```
+Headers:
+```
+x-access-token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 #### Register
@@ -63,8 +64,6 @@ POST /auth/register
 Response:
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": "124",
     "email": "newuser@example.com",
@@ -72,6 +71,10 @@ Response:
     "role": "user"
   }
 }
+```
+Headers:
+```
+x-access-token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 ## Application Store

@@ -16,7 +16,7 @@
             <div class="profile-avatar-section">
               <div class="avatar-container">
                 <img
-                  :src="profileData.avatar || '/assets/images/default-avatar.png'"
+                  :src="profileData.avatar || require('@/assets/images/default-avatar.png')"
                   alt="Profile Avatar"
                   class="profile-avatar"
                 />
@@ -342,12 +342,14 @@ export default {
         error.value = null;
 
         if (currentUser.value) {
-          profileData.value = {
+          const userData = {
             nickname: currentUser.value.nickname || '',
             email: currentUser.value.email || '',
             avatar: currentUser.value.avatar || '',
             bio: currentUser.value.bio || ''
           };
+
+          profileData.value = { ...userData };
 
           // Load preferences if available
           if (currentUser.value.preferences) {
@@ -359,12 +361,14 @@ export default {
           loading.value = false;
         } else {
           const user = await authService.getProfile();
-          profileData.value = {
+          const userData = {
             nickname: user.nickname || '',
             email: user.email || '',
             avatar: user.avatar || '',
             bio: user.bio || ''
           };
+
+          profileData.value = { ...userData };
 
           if (user.preferences) {
             preferences.value = {
@@ -452,12 +456,29 @@ export default {
       try {
         updating.value = true;
 
-        const updatedProfile = await authService.updateProfile({
-          nickname: profileData.value.nickname,
-          bio: profileData.value.bio
-        });
+        // 构建只包含变更字段的更新对象，直接使用 currentUser 比较
+        const updateData = {};
 
-        store.dispatch('auth/updateUser', updatedProfile);
+        // 只有当字段值与 currentUser 中的原始值不同时才添加到更新数据中
+        if (profileData.value.nickname !== (currentUser.value?.nickname || '')) {
+          updateData.nickname = profileData.value.nickname;
+        }
+
+        if (profileData.value.bio !== (currentUser.value?.bio || '')) {
+          updateData.bio = profileData.value.bio;
+        }
+
+        // 如果没有任何字段发生变化，显示提示信息
+        if (Object.keys(updateData).length === 0) {
+          showToast('No changes detected', 'info');
+          return;
+        }
+
+        const updatedProfile = await authService.updateProfile(updateData);
+
+        // 更新 store
+        store.dispatch('auth/updateUser', updatedProfile.data || updatedProfile);
+
         showToast('Profile updated successfully');
       } catch (error) {
         showToast(error.message || 'Failed to update profile', 'error');
@@ -576,12 +597,14 @@ export default {
 
       try {
         const user = await authService.getProfile();
-        profileData.value = {
+        const userData = {
           nickname: user.nickname || '',
           email: user.email || '',
           avatar: user.avatar || '',
           bio: user.bio || ''
         };
+
+        profileData.value = { ...userData };
 
         if (user.preferences) {
           preferences.value = {

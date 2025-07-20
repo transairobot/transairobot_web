@@ -45,7 +45,6 @@ const localStorageMock: LocalStorageMock = (() => {
 vi.mock('@/services/auth.service', () => ({
   default: {
     logout: vi.fn().mockResolvedValue({}),
-    refreshToken: vi.fn().mockResolvedValue({ token: 'new-token' }),
     getProfile: vi.fn().mockResolvedValue({ id: '1', name: 'Test User', role: 'user' })
   }
 }));

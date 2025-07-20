@@ -13,14 +13,26 @@ class AuthService {
    */
   async login(email, password) {
     try {
-      return await api.post(
+      const response = await api.post(
         '/auth/login',
         { email, password },
         {
           includeAuth: false,
-          showErrorNotification: true
+          showErrorNotification: true,
+          returnFullResponse: true // 需要获取完整响应以访问 headers
         }
       );
+
+      // 从 response headers 中获取 token
+      const token = response.headers.get('x-access-token');
+      if (token) {
+        // 存储 token 到 localStorage
+        localStorage.setItem('token', token);
+      }
+
+      return {
+        user: response.data.data
+      };
     } catch (error) {
       // Handle specific login errors
       if (error.message === 'Invalid credentials') {
@@ -33,14 +45,26 @@ class AuthService {
   /**
    * Register new user
    * @param {Object} userData - User registration data
-   * @returns {Promise} Promise resolving to user data
+   * @returns {Promise} Promise resolving to user data and token
    */
   async register(userData) {
     try {
-      return await api.post('/auth/register', userData, {
+      const response = await api.post('/auth/register', userData, {
         includeAuth: false,
-        showErrorNotification: true
+        showErrorNotification: true,
+        returnFullResponse: true
       });
+
+      // 从 response headers 中获取 token
+      const token = response.headers.get('x-access-token');
+      if (token) {
+        // 存储 token 到 localStorage
+        localStorage.setItem('token', token);
+      }
+
+      return {
+        user: response.data.data
+      };
     } catch (error) {
       // Handle specific registration errors
       if (error.message && error.message.includes('already exists')) {
@@ -83,21 +107,6 @@ class AuthService {
     const result = await api.put('/auth/profile', profileData);
     notificationService.success('Profile updated successfully');
     return result;
-  }
-
-  /**
-   * Refresh authentication token
-   * @returns {Promise} Promise resolving to new token
-   */
-  async refreshToken() {
-    try {
-      return await api.post('/auth/refresh-token', null, {
-        showErrorNotification: false // Don't show errors on token refresh
-      });
-    } catch (error) {
-      console.warn('Token refresh error:', error);
-      throw error;
-    }
   }
 
   /**

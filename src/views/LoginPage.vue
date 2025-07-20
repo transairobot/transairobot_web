@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import AppContainer from '../components/common/AppContainer.vue';
@@ -80,21 +80,22 @@ export default {
         loading.value = true;
         error.value = null;
 
-        // Call the authentication service
-        const authService = await import('../services/auth.service').then(module => module.default);
-        const response = await authService.login(form.value.email, form.value.password);
-
-        // Store the token and user data
-        store.dispatch('auth/login', {
-          token: response.token,
-          user: response.user
+        // 使用 store action 进行登录
+        await store.dispatch('auth/login', {
+          email: form.value.email,
+          password: form.value.password
         });
+
+        // 使用 nextTick 确保所有响应式状态更新完成
+        await nextTick();
+
+        // 添加一个小延迟确保所有组件状态同步
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         // Redirect to home or the requested page
         const redirectPath = router.currentRoute.value.query.redirect || '/';
         router.push(redirectPath);
       } catch (err) {
-        loading.value = false;
         error.value = err.message || 'Failed to login. Please try again.';
       } finally {
         loading.value = false;
