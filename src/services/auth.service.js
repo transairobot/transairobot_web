@@ -19,16 +19,9 @@ class AuthService {
         {
           includeAuth: false,
           showErrorNotification: true,
-          returnFullResponse: true // 需要获取完整响应以访问 headers
+          returnFullResponse: true
         }
       );
-
-      // 从 response headers 中获取 token
-      const token = response.headers.get('x-access-token');
-      if (token) {
-        // 存储 token 到 localStorage
-        localStorage.setItem('token', token);
-      }
 
       return {
         user: response.data.data
@@ -54,13 +47,6 @@ class AuthService {
         showErrorNotification: true,
         returnFullResponse: true
       });
-
-      // 从 response headers 中获取 token
-      const token = response.headers.get('x-access-token');
-      if (token) {
-        // 存储 token 到 localStorage
-        localStorage.setItem('token', token);
-      }
 
       return {
         user: response.data.data

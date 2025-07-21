@@ -96,6 +96,9 @@ export default {
         console.error('Error fetching user profile:', error);
         throw error;
       }
+    },
+    updateToken({ commit }, token) {
+      commit('SET_TOKEN', token);
     }
   }
 };

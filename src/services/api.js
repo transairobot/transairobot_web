@@ -49,6 +49,17 @@ const createHeaders = (includeAuth = true, isFormData = false) => {
  * @returns {Promise} Promise resolving to response data
  */
 const handleResponse = async (response, endpoint, returnFullResponse = false) => {
+  const newToken = response.headers.get('x-access-token');
+  if (newToken) {
+    try {
+      if (store && store.dispatch) {
+        store.dispatch('auth/updateToken', newToken);
+      }
+    } catch (error) {
+      console.warn('Failed to update token in store:', error);
+    }
+  }
+
   // Handle different response types
   let data;
   const contentType = response.headers.get('content-type');

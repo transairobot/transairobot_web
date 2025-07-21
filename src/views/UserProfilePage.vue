@@ -456,10 +456,8 @@ export default {
       try {
         updating.value = true;
 
-        // 构建只包含变更字段的更新对象，直接使用 currentUser 比较
         const updateData = {};
 
-        // 只有当字段值与 currentUser 中的原始值不同时才添加到更新数据中
         if (profileData.value.nickname !== (currentUser.value?.nickname || '')) {
           updateData.nickname = profileData.value.nickname;
         }
@@ -468,7 +466,6 @@ export default {
           updateData.bio = profileData.value.bio;
         }
 
-        // 如果没有任何字段发生变化，显示提示信息
         if (Object.keys(updateData).length === 0) {
           showToast('No changes detected', 'info');
           return;
@@ -476,7 +473,6 @@ export default {
 
         const updatedProfile = await authService.updateProfile(updateData);
 
-        // 更新 store
         store.dispatch('auth/updateUser', updatedProfile.data || updatedProfile);
 
         showToast('Profile updated successfully');
@@ -521,9 +517,53 @@ export default {
       try {
         updating.value = true;
 
-        const updatedProfile = await authService.updateProfile({
-          preferences: preferences.value
-        });
+        const originalPreferences = currentUser.value?.preferences || {
+          emailNotifications: {
+            news: true,
+            robotUpdates: true,
+            appUpdates: true
+          },
+          theme: 'system'
+        };
+
+        const updateData = {};
+        let hasChanges = false;
+
+        const currentEmailNotifications = preferences.value.emailNotifications;
+        const originalEmailNotifications = originalPreferences.emailNotifications || {
+          news: true,
+          robotUpdates: true,
+          appUpdates: true
+        };
+
+        if (
+          currentEmailNotifications.news !== originalEmailNotifications.news ||
+          currentEmailNotifications.robotUpdates !== originalEmailNotifications.robotUpdates ||
+          currentEmailNotifications.appUpdates !== originalEmailNotifications.appUpdates
+        ) {
+          updateData.emailNotifications = currentEmailNotifications;
+          hasChanges = true;
+        }
+
+        if (preferences.value.theme !== (originalPreferences.theme || 'system')) {
+          updateData.theme = preferences.value.theme;
+          hasChanges = true;
+        }
+
+        if (!hasChanges) {
+          return;
+        }
+
+        const cleanPreferences = {
+          emailNotifications: updateData.emailNotifications || originalEmailNotifications,
+          theme: updateData.theme || originalPreferences.theme || 'system'
+        };
+
+        const preferencesUpdate = {
+          preferences: cleanPreferences
+        };
+
+        const updatedProfile = await authService.updateProfile(preferencesUpdate);
 
         // Apply theme change immediately if needed
         if (preferences.value.theme !== 'system') {
@@ -534,7 +574,7 @@ export default {
           document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
         }
 
-        store.dispatch('auth/updateUser', updatedProfile);
+        store.dispatch('auth/updateUser', updatedProfile.data || updatedProfile);
         showToast('Preferences updated successfully');
       } catch (error) {
         showToast(error.message || 'Failed to update preferences', 'error');
