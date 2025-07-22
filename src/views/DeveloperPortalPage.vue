@@ -87,10 +87,8 @@ export default {
     });
 
     onMounted(() => {
-      // Simulate loading delay
-      setTimeout(() => {
-        loading.value = false;
-      }, 500);
+      // 移除模拟的loading延迟，立即显示内容避免布局跳跃
+      loading.value = false;
     });
 
     return {
@@ -108,10 +106,14 @@ export default {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  // 确保页面总是可以滚动
+  overflow-y: auto;
 
   main {
     flex: 1;
     padding: 2rem 0;
+    // 设置最小高度确保内容区域足够高
+    min-height: calc(100vh - 160px); // 减去header和footer的估计高度
   }
 
   .portal-header {
@@ -138,6 +140,8 @@ export default {
     display: flex;
     justify-content: center;
     padding: 3rem 0;
+    // 确保loading状态时也有足够的高度
+    min-height: 400px;
   }
 
   .registration-section {
@@ -156,6 +160,12 @@ export default {
         color: var(--text-secondary);
       }
     }
+  }
+
+  // 确保仪表板和验证等待页面也有合适的高度
+  .dashboard-section,
+  .verification-section {
+    min-height: 600px;
   }
 }
 </style>

@@ -31,12 +31,14 @@ export default {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: visible;
 }
 
 /* Page transition animations */
 .page-enter-active,
 .page-leave-active {
   transition: opacity 0.3s, transform 0.3s;
+  overflow: visible;
 }
 
 .page-enter-from {

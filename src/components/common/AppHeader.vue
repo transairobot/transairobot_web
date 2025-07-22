@@ -111,7 +111,7 @@ export default {
 
     const userAvatar = computed(() => {
       const user = store.getters['auth/currentUser'];
-      return user && user.avatar ? user.avatar : '';
+      return user && user.avatar ? user.avatar : require('@/assets/images/default-avatar.png');
     });
 
     const userInitials = computed(() => {
@@ -604,6 +604,11 @@ export default {
 
   .no-scroll {
     overflow: hidden;
+
+    // 确保只在移动端菜单打开时生效，避免影响桌面端
+    @media (min-width: $breakpoint-md) {
+      overflow: auto !important;
+    }
   }
 }
 

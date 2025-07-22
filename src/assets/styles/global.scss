@@ -9,6 +9,14 @@
   box-sizing: border-box;
 }
 
+html {
+  /* 确保html元素始终可以滚动 */
+  overflow-y: scroll;
+  overflow-x: hidden;
+  /* 防止滚动条跳跃 */
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: $font-primary;
   font-size: $font-size-md;
@@ -16,6 +24,29 @@ body {
   color: var(--text-primary);
   background-color: var(--bg-primary);
   transition: background-color $transition-normal ease, color $transition-normal ease;
+  /* 强制body保持滚动能力 */
+  overflow-x: hidden;
+  min-height: 100vh;
+  /* 防止某些浏览器的滚动条消失问题 */
+  height: auto;
+}
+
+/* 全局防止滚动条消失的样式 */
+html,
+body {
+  scrollbar-width: auto; /* Firefox */
+  -ms-overflow-style: scrollbar; /* IE and Edge */
+}
+
+/* 确保no-scroll类不会意外影响整个页面 */
+body.no-scroll {
+  overflow: hidden;
+  
+  /* 只在真正需要时（移动端菜单打开）生效 */
+  @media (min-width: $breakpoint-md) {
+    overflow: auto !important;
+    overflow-y: scroll !important;
+  }
 }
 
 h1, h2, h3, h4, h5, h6 {
