@@ -132,8 +132,8 @@ export default {
     const router = useRouter();
 
     const form = ref({
-      email: 'test@example.com',
-      password: 'password123'
+      email: '',
+      password: ''
     });
 
     const loading = ref(false);
