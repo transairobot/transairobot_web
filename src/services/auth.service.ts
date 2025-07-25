@@ -206,6 +206,23 @@ class AuthService {
       }
     );
   }
+
+  /**
+   * Send email verification code
+   * @param email - User email
+   * @returns Promise resolving to send status
+   */
+  async sendEmailCode(email: string): Promise<any> {
+    const result = await api.post(
+      '/auth/send_email_code',
+      { email },
+      {
+        includeAuth: false
+      }
+    );
+    notificationService.success('Verification code has been sent to your email');
+    return result;
+  }
 }
 
 export default new AuthService();

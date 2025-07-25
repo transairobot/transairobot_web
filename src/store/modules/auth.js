@@ -99,6 +99,9 @@ export default {
     },
     updateToken({ commit }, token) {
       commit('SET_TOKEN', token);
+    },
+    async sendVerificationCode(_, email) {
+      return await authService.sendEmailCode(email);
     }
   }
 };
