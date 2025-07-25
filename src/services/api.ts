@@ -120,10 +120,10 @@ const handleResponse = async <T>(
   if (response.ok) {
     const apiResponse = data as ApiResponse<T>;
 
-    if (apiResponse.error_code !== 0) {
+    if (apiResponse.code !== 0) {
       // Handle API-level errors (e.g., validation errors)
-      notificationService.error(apiResponse.error_msg);
-      return Promise.reject(new Error(apiResponse.error_msg));
+      notificationService.error(apiResponse.msg);
+      return Promise.reject(new Error(apiResponse.msg));
     }
 
     const transformedData = transformer.transformResponse(apiResponse.body, endpoint);
@@ -141,7 +141,7 @@ const handleResponse = async <T>(
 
   // Handle other HTTP errors that returned JSON
   const errorMessage =
-    data.message || data.error_msg || errorHandler.getErrorMessageByStatusCode(response.status);
+    data.message || data.msg || errorHandler.getErrorMessageByStatusCode(response.status);
   return Promise.reject(new Error(errorMessage));
 };
 
@@ -502,9 +502,9 @@ export const uploadFiles = async (
                 data = JSON.parse(xhr.responseText);
                 const apiResponse = data as ApiResponse<any>;
 
-                if (apiResponse.error_code !== 0) {
-                  notificationService.error(apiResponse.error_msg);
-                  reject(new Error(apiResponse.error_msg));
+                if (apiResponse.code !== 0) {
+                  notificationService.error(apiResponse.msg);
+                  reject(new Error(apiResponse.msg));
                   return;
                 }
 
@@ -529,7 +529,7 @@ export const uploadFiles = async (
               let errorMessage;
               try {
                 const errorData = JSON.parse(xhr.responseText);
-                errorMessage = errorData.error_msg || errorData.message || `Error: ${xhr.status}`;
+                errorMessage = errorData.msg || errorData.message || `Error: ${xhr.status}`;
               } catch (e) {
                 errorMessage = xhr.responseText || `Error: ${xhr.status}`;
               }
