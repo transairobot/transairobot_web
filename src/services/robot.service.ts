@@ -26,7 +26,11 @@ class RobotService {
   }
 
   async removeApp(robotId: string, appId: string): Promise<any> {
-    return await api.delete(`/robots/${robotId}/apps/${appId}`);
+    return await api.post('/robots/remove_app', { robotId, appId });
+  }
+
+  async installApp(robotId: string, appId: string): Promise<any> {
+    return await api.post('/robots/install_app', { robotId, appId });
   }
 
   async updateRobot(robotId: string, robotData: Partial<Robot>): Promise<Robot> {

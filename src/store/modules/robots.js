@@ -1,3 +1,5 @@
+import robotService from '../../services/robot.service';
+
 export default {
   namespaced: true,
   state: {
@@ -136,57 +138,44 @@ export default {
         commit('SET_LOADING', false);
       }, 500);
     },
-    installApp({ commit, dispatch, rootGetters }, { robotId, appId }) {
-      return new Promise((resolve, reject) => {
-        commit('SET_INSTALLATION_STATUS', { inProgress: true, success: null, error: null });
-
-        // In a real app, this would be an API call
-        setTimeout(() => {
-          try {
-            // Get app details from the apps store module
-            const app = rootGetters['apps/currentApp'] || {
-              id: appId,
-              name: 'Unknown App',
-              icon: '/assets/icons/default-app.png',
-              version: '1.0.0'
-            };
-
-            // Add the app to the robot
-            commit('ADD_APP_TO_ROBOT', {
-              robotId,
-              app: {
-                id: app.id,
-                name: app.name,
-                icon: app.icon,
-                version: app.version
-              }
-            });
-
-            commit('SET_INSTALLATION_STATUS', { inProgress: false, success: true, error: null });
-            resolve();
-          } catch (error) {
-            commit('SET_INSTALLATION_STATUS', {
-              inProgress: false,
-              success: false,
-              error: error.message || 'Failed to install application'
-            });
-            reject(error);
+    async installApp({ commit, rootGetters }, { robotId, appId }) {
+      commit('SET_INSTALLATION_STATUS', { inProgress: true, success: null, error: null });
+      try {
+        await robotService.installApp(robotId, appId);
+        const app = rootGetters['apps/currentApp'] || {
+          id: appId,
+          name: 'Unknown App',
+          icon: '/assets/icons/default-app.png',
+          version: '1.0.0'
+        };
+        commit('ADD_APP_TO_ROBOT', {
+          robotId,
+          app: {
+            id: app.id,
+            name: app.name,
+            icon: app.icon,
+            version: app.version
           }
-        }, 3000); // Simulate a longer API call for installation
-      });
+        });
+        commit('SET_INSTALLATION_STATUS', { inProgress: false, success: true, error: null });
+      } catch (error) {
+        commit('SET_INSTALLATION_STATUS', {
+          inProgress: false,
+          success: false,
+          error: error.message || 'Failed to install application'
+        });
+        throw error;
+      }
     },
-    uninstallApp({ commit }, { robotId, appId }) {
-      return new Promise((resolve, reject) => {
-        // In a real app, this would be an API call
-        setTimeout(() => {
-          try {
-            commit('REMOVE_APP_FROM_ROBOT', { robotId, appId });
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        }, 1000);
-      });
+    async uninstallApp({ commit }, { robotId, appId }) {
+      try {
+        await robotService.removeApp(robotId, appId);
+        commit('REMOVE_APP_FROM_ROBOT', { robotId, appId });
+      } catch (error) {
+        console.error(`Failed to uninstall app: ${error}`);
+        // Optionally, dispatch an action to show a notification to the user
+        throw error;
+      }
     },
     updateApp({ commit, dispatch }, { robotId, appId }) {
       // This would typically involve uninstalling and reinstalling the app

@@ -34,8 +34,8 @@ describe('SearchBar.vue', () => {
     expect(input.attributes('placeholder')).toBe('Search applications...');
   });
 
-  it('renders with custom placeholder', () => {
-    wrapper.setProps({ placeholder: 'Custom placeholder' });
+  it('renders with custom placeholder', async () => {
+    await wrapper.setProps({ placeholder: 'Custom placeholder' });
     const input = wrapper.find('input.search-input');
     expect(input.attributes('placeholder')).toBe('Custom placeholder');
   });

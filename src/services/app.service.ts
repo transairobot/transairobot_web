@@ -29,10 +29,6 @@ class AppService {
     return await api.get(`/apps/${appId}`);
   }
 
-  async installApp(robotId: string, appId: string): Promise<any> {
-    return await api.post(`/robots/${robotId}/apps`, { appId });
-  }
-
   async searchApps(query: string): Promise<App[]> {
     return await api.get(`/apps/search?q=${encodeURIComponent(query)}`);
   }

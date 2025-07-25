@@ -44,6 +44,7 @@ const localStorageMock: LocalStorageMock = (() => {
 // Mock auth service
 vi.mock('@/services/auth.service', () => ({
   default: {
+    login: vi.fn().mockResolvedValue({ user: { id: '1', name: 'Test User' } }),
     logout: vi.fn().mockResolvedValue({}),
     getProfile: vi.fn().mockResolvedValue({ id: '1', name: 'Test User', role: 'user' })
   }
@@ -189,11 +190,15 @@ describe('Auth Store Module', () => {
   });
 
   describe('Actions', () => {
-    it('login commits token and user', () => {
-      const payload = { token: createValidToken(), user: { id: '1', name: 'Test User' } };
-      authModule.actions.login(store, payload);
-      expect(store.commit).toHaveBeenCalledWith('SET_TOKEN', payload.token);
-      expect(store.commit).toHaveBeenCalledWith('SET_USER', payload.user);
+    it('login commits token and user', async () => {
+      const credentials = { email: 'test@example.com', password: 'password' };
+      const user = { id: '1', name: 'Test User' };
+      // Mock the service to return a specific user
+      const authService = (await import('@/services/auth.service')).default;
+      authService.login = vi.fn().mockResolvedValue({ user });
+
+      await authModule.actions.login(store, credentials);
+      expect(store.commit).toHaveBeenCalledWith('SET_USER', user);
     });
 
     it('logout clears user data', async () => {

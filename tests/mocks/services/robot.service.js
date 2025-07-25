@@ -20,7 +20,7 @@ export default {
       message: 'Application installed successfully'
     }),
 
-  uninstallApp: (robotId, appId) =>
+  removeApp: (robotId, appId) =>
     Promise.resolve({
       success: true,
       message: 'Application uninstalled successfully'
