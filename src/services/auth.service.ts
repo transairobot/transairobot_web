@@ -1,5 +1,6 @@
 import api from './api';
 import notificationService from './notification.service';
+import { User } from './admin.service';
 
 /**
  * Authentication service
@@ -7,11 +8,11 @@ import notificationService from './notification.service';
 class AuthService {
   /**
    * Login user
-   * @param {string} email - User email
-   * @param {string} password - User password
-   * @returns {Promise} Promise resolving to user data and token
+   * @param email - User email
+   * @param password - User password
+   * @returns Promise resolving to user data
    */
-  async login(email, password) {
+  async login(email: string, password: string): Promise<{ user: User }> {
     try {
       const response = await api.post(
         '/auth/login',
@@ -26,7 +27,7 @@ class AuthService {
       return {
         user: response.data.data
       };
-    } catch (error) {
+    } catch (error: any) {
       // Handle specific login errors
       if (error.message === 'Invalid credentials') {
         notificationService.error('Invalid email or password. Please try again.');
@@ -37,10 +38,10 @@ class AuthService {
 
   /**
    * Register new user
-   * @param {Object} userData - User registration data
-   * @returns {Promise} Promise resolving to user data and token
+   * @param userData - User registration data
+   * @returns Promise resolving to user data
    */
-  async register(userData) {
+  async register(userData: Partial<User>): Promise<{ user: User }> {
     try {
       const response = await api.post('/auth/register', userData, {
         includeAuth: false,
@@ -51,7 +52,7 @@ class AuthService {
       return {
         user: response.data.data
       };
-    } catch (error) {
+    } catch (error: any) {
       // Handle specific registration errors
       if (error.message && error.message.includes('already exists')) {
         notificationService.error('An account with this email already exists.');
@@ -62,9 +63,9 @@ class AuthService {
 
   /**
    * Logout user
-   * @returns {Promise} Promise resolving to logout status
+   * @returns Promise resolving to logout status
    */
-  async logout() {
+  async logout(): Promise<{ success: boolean }> {
     try {
       return await api.post('/auth/logout', null, {
         showErrorNotification: false // Don't show errors on logout
@@ -78,18 +79,18 @@ class AuthService {
 
   /**
    * Get current user profile
-   * @returns {Promise} Promise resolving to user profile data
+   * @returns Promise resolving to user profile data
    */
-  async getProfile() {
+  async getProfile(): Promise<User> {
     return await api.get('/auth/profile');
   }
 
   /**
    * Update user profile
-   * @param {Object} profileData - Updated profile data
-   * @returns {Promise} Promise resolving to updated profile
+   * @param profileData - Updated profile data
+   * @returns Promise resolving to updated profile
    */
-  async updateProfile(profileData) {
+  async updateProfile(profileData: Partial<User>): Promise<User> {
     const result = await api.put('/auth/profile', profileData);
     notificationService.success('Profile updated successfully');
     return result;
@@ -97,10 +98,10 @@ class AuthService {
 
   /**
    * Request password reset
-   * @param {string} email - User email
-   * @returns {Promise} Promise resolving to reset request status
+   * @param email - User email
+   * @returns Promise resolving to reset request status
    */
-  async requestPasswordReset(email) {
+  async requestPasswordReset(email: string): Promise<any> {
     const result = await api.post(
       '/auth/forgot-password',
       { email },
@@ -114,11 +115,11 @@ class AuthService {
 
   /**
    * Reset password with token
-   * @param {string} token - Reset token
-   * @param {string} password - New password
-   * @returns {Promise} Promise resolving to reset status
+   * @param token - Reset token
+   * @param password - New password
+   * @returns Promise resolving to reset status
    */
-  async resetPassword(token, password) {
+  async resetPassword(token: string, password: string): Promise<any> {
     const result = await api.post(
       '/auth/reset-password',
       { token, password },
@@ -132,16 +133,16 @@ class AuthService {
 
   /**
    * Change password (authenticated)
-   * @param {string} currentPassword - Current password
-   * @param {string} newPassword - New password
-   * @returns {Promise} Promise resolving to change status
+   * @param currentPassword - Current password
+   * @param newPassword - New password
+   * @returns Promise resolving to change status
    */
-  async changePassword(currentPassword, newPassword) {
+  async changePassword(currentPassword: string, newPassword: string): Promise<any> {
     try {
       const result = await api.post('/auth/change-password', { currentPassword, newPassword });
       notificationService.success('Password changed successfully');
       return result;
-    } catch (error) {
+    } catch (error: any) {
       // Handle specific password change errors
       if (error.message === 'Current password is incorrect') {
         notificationService.error('Current password is incorrect. Please try again.');
@@ -152,11 +153,11 @@ class AuthService {
 
   /**
    * Upload user avatar
-   * @param {FormData} formData - Form data with avatar file
-   * @param {Function} onProgress - Progress callback function
-   * @returns {Promise} Promise resolving to avatar URL
+   * @param formData - Form data with avatar file
+   * @param onProgress - Progress callback function
+   * @returns Promise resolving to avatar URL
    */
-  async uploadAvatar(formData, onProgress) {
+  async uploadAvatar(formData: FormData, onProgress: (progress: number) => void): Promise<any> {
     const result = await api.uploadFiles('/auth/avatar', formData, {
       onProgress
     });
@@ -166,10 +167,10 @@ class AuthService {
 
   /**
    * Verify email with token
-   * @param {string} token - Verification token
-   * @returns {Promise} Promise resolving to verification status
+   * @param token - Verification token
+   * @returns Promise resolving to verification status
    */
-  async verifyEmail(token) {
+  async verifyEmail(token: string): Promise<any> {
     const result = await api.post(
       '/auth/verify-email',
       { token },
@@ -183,21 +184,21 @@ class AuthService {
 
   /**
    * Resend verification email
-   * @returns {Promise} Promise resolving to resend status
+   * @returns Promise resolving to resend status
    */
-  async resendVerificationEmail() {
-    const result = await api.post('/auth/resend-verification');
+  async resendVerificationEmail(): Promise<any> {
+    const result = await api.post('/auth/resend-verification', {});
     notificationService.success('Verification email has been sent');
     return result;
   }
 
   /**
    * Check if token is valid
-   * @param {string} token - Token to validate
-   * @param {string} type - Token type (reset, verify)
-   * @returns {Promise} Promise resolving to token validity
+   * @param token - Token to validate
+   * @param type - Token type (reset, verify)
+   * @returns Promise resolving to token validity
    */
-  async validateToken(token, type) {
+  async validateToken(token: string, type: string): Promise<any> {
     return await api.post(
       '/auth/validate-token',
       { token, type },

@@ -14,14 +14,36 @@ const API_CONFIG = {
   retryDelay: 1000 // 1 second
 };
 
+interface ApiConfig {
+  baseUrl: string;
+  timeout: number;
+  retryAttempts: number;
+  retryDelay: number;
+}
+
+interface RequestOptions {
+  includeAuth?: boolean;
+  showErrorNotification?: boolean;
+  retry?: number;
+  params?: Record<string, any> | null;
+  returnFullResponse?: boolean;
+  onProgress?: ((progress: number) => void) | null;
+}
+
+interface FullResponse<T> {
+  data: T;
+  headers: Headers;
+  status: number;
+}
+
 /**
  * Create headers for API requests
  * @param {boolean} includeAuth - Whether to include auth token in headers
  * @param {boolean} isFormData - Whether the request contains form data
- * @returns {Object} Headers object
+ * @returns {Record<string, string>} Headers object
  */
-const createHeaders = (includeAuth = true, isFormData = false) => {
-  const headers = {
+const createHeaders = (includeAuth = true, isFormData = false): Record<string, string> => {
+  const headers: Record<string, string> = {
     Accept: 'application/json',
     'X-Client-Version': process.env.VUE_APP_VERSION || '1.0.0',
     'X-Client-Platform': 'web'
@@ -46,9 +68,13 @@ const createHeaders = (includeAuth = true, isFormData = false) => {
  * @param {Response} response - Fetch response object
  * @param {string} endpoint - API endpoint
  * @param {boolean} returnFullResponse - Whether to return full response object
- * @returns {Promise} Promise resolving to response data
+ * @returns {Promise<any>} Promise resolving to response data
  */
-const handleResponse = async (response, endpoint, returnFullResponse = false) => {
+const handleResponse = async (
+  response: Response,
+  endpoint: string,
+  returnFullResponse = false
+): Promise<any> => {
   const newToken = response.headers.get('x-access-token');
   if (newToken) {
     try {
@@ -61,7 +87,7 @@ const handleResponse = async (response, endpoint, returnFullResponse = false) =>
   }
 
   // Handle different response types
-  let data;
+  let data: any;
   const contentType = response.headers.get('content-type');
 
   try {
@@ -111,12 +137,16 @@ const handleResponse = async (response, endpoint, returnFullResponse = false) =>
  * @param {Function} requestFn - Request function
  * @param {number} retries - Number of retries left
  * @param {number} delay - Delay in milliseconds
- * @returns {Promise} Promise resolving to response data
+ * @returns {Promise<any>} Promise resolving to response data
  */
-const retryRequest = async (requestFn, retries, delay) => {
+const retryRequest = async (
+  requestFn: () => Promise<any>,
+  retries: number,
+  delay: number
+): Promise<any> => {
   try {
     return await requestFn();
-  } catch (error) {
+  } catch (error: any) {
     // Don't retry if we're out of retries or if it's an auth error
     if (retries <= 0 || (error.response && error.response.status === 401)) {
       throw error;
@@ -133,10 +163,10 @@ const retryRequest = async (requestFn, retries, delay) => {
 /**
  * Make a GET request
  * @param {string} endpoint - API endpoint
- * @param {Object} options - Request options
- * @returns {Promise} Promise resolving to response data
+ * @param {RequestOptions} options - Request options
+ * @returns {Promise<any>} Promise resolving to response data
  */
-export const get = async (endpoint, options = {}) => {
+export const get = async (endpoint: string, options: RequestOptions = {}): Promise<any> => {
   const {
     includeAuth = true,
     showErrorNotification = true,
@@ -174,7 +204,7 @@ export const get = async (endpoint, options = {}) => {
 
       clearTimeout(timeoutId);
       return handleResponse(response, endpoint, returnFullResponse);
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
       }
@@ -195,11 +225,15 @@ export const get = async (endpoint, options = {}) => {
 /**
  * Make a POST request
  * @param {string} endpoint - API endpoint
- * @param {Object} data - Request payload
- * @param {Object} options - Request options
- * @returns {Promise} Promise resolving to response data
+ * @param {any} data - Request payload
+ * @param {RequestOptions} options - Request options
+ * @returns {Promise<any>} Promise resolving to response data
  */
-export const post = async (endpoint, data, options = {}) => {
+export const post = async (
+  endpoint: string,
+  data: any,
+  options: RequestOptions = {}
+): Promise<any> => {
   const {
     includeAuth = true,
     showErrorNotification = true,
@@ -225,7 +259,7 @@ export const post = async (endpoint, data, options = {}) => {
 
       clearTimeout(timeoutId);
       return handleResponse(response, endpoint, returnFullResponse);
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
       }
@@ -246,11 +280,15 @@ export const post = async (endpoint, data, options = {}) => {
 /**
  * Make a PUT request
  * @param {string} endpoint - API endpoint
- * @param {Object} data - Request payload
- * @param {Object} options - Request options
- * @returns {Promise} Promise resolving to response data
+ * @param {any} data - Request payload
+ * @param {RequestOptions} options - Request options
+ * @returns {Promise<any>} Promise resolving to response data
  */
-export const put = async (endpoint, data, options = {}) => {
+export const put = async (
+  endpoint: string,
+  data: any,
+  options: RequestOptions = {}
+): Promise<any> => {
   const {
     includeAuth = true,
     showErrorNotification = true,
@@ -276,7 +314,7 @@ export const put = async (endpoint, data, options = {}) => {
 
       clearTimeout(timeoutId);
       return handleResponse(response, endpoint, returnFullResponse);
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
       }
@@ -297,11 +335,15 @@ export const put = async (endpoint, data, options = {}) => {
 /**
  * Make a PATCH request
  * @param {string} endpoint - API endpoint
- * @param {Object} data - Request payload
- * @param {Object} options - Request options
- * @returns {Promise} Promise resolving to response data
+ * @param {any} data - Request payload
+ * @param {RequestOptions} options - Request options
+ * @returns {Promise<any>} Promise resolving to response data
  */
-export const patch = async (endpoint, data, options = {}) => {
+export const patch = async (
+  endpoint: string,
+  data: any,
+  options: RequestOptions = {}
+): Promise<any> => {
   const {
     includeAuth = true,
     showErrorNotification = true,
@@ -327,7 +369,7 @@ export const patch = async (endpoint, data, options = {}) => {
 
       clearTimeout(timeoutId);
       return handleResponse(response, endpoint, returnFullResponse);
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
       }
@@ -348,10 +390,10 @@ export const patch = async (endpoint, data, options = {}) => {
 /**
  * Make a DELETE request
  * @param {string} endpoint - API endpoint
- * @param {Object} options - Request options
- * @returns {Promise} Promise resolving to response data
+ * @param {RequestOptions} options - Request options
+ * @returns {Promise<any>} Promise resolving to response data
  */
-export const del = async (endpoint, options = {}) => {
+export const del = async (endpoint: string, options: RequestOptions = {}): Promise<any> => {
   const {
     includeAuth = true,
     showErrorNotification = true,
@@ -373,7 +415,7 @@ export const del = async (endpoint, options = {}) => {
 
       clearTimeout(timeoutId);
       return handleResponse(response, endpoint, returnFullResponse);
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Request timed out');
       }
@@ -394,11 +436,15 @@ export const del = async (endpoint, options = {}) => {
 /**
  * Upload files with form data
  * @param {string} endpoint - API endpoint
- * @param {Object} formData - FormData object with files and other data
- * @param {Object} options - Request options
- * @returns {Promise} Promise resolving to response data
+ * @param {FormData} formData - FormData object with files and other data
+ * @param {RequestOptions} options - Request options
+ * @returns {Promise<any>} Promise resolving to response data
  */
-export const uploadFiles = async (endpoint, formData, options = {}) => {
+export const uploadFiles = async (
+  endpoint: string,
+  formData: FormData,
+  options: RequestOptions = {}
+): Promise<any> => {
   const {
     includeAuth = true,
     showErrorNotification = true,
@@ -436,7 +482,7 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
                   resolve({
                     data: transformedData,
                     headers: {
-                      get: name => xhr.getResponseHeader(name)
+                      get: (name: string) => xhr.getResponseHeader(name)
                     },
                     status: xhr.status
                   });
@@ -455,7 +501,7 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
                 errorMessage = `Error: ${xhr.status}`;
               }
 
-              const error = new Error(errorMessage);
+              const error: any = new Error(errorMessage);
               error.status = xhr.status;
 
               if (xhr.status === 401) {
@@ -494,7 +540,7 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
           // Set headers
           const headers = createHeaders(includeAuth, true);
           Object.entries(headers).forEach(([key, value]) => {
-            xhr.setRequestHeader(key, value);
+            xhr.setRequestHeader(key, value as string);
           });
 
           xhr.send(formData);
@@ -512,7 +558,7 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
         clearTimeout(timeoutId);
         return handleResponse(response, endpoint, returnFullResponse);
       }
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Upload timed out');
       }
@@ -534,10 +580,14 @@ export const uploadFiles = async (endpoint, formData, options = {}) => {
  * Download file from API
  * @param {string} endpoint - API endpoint
  * @param {string} filename - Filename to save as
- * @param {Object} options - Request options
- * @returns {Promise} Promise resolving when download completes
+ * @param {RequestOptions} options - Request options
+ * @returns {Promise<{ success: boolean; filename: string }>} Promise resolving when download completes
  */
-export const downloadFile = async (endpoint, filename, options = {}) => {
+export const downloadFile = async (
+  endpoint: string,
+  filename: string,
+  options: RequestOptions = {}
+): Promise<{ success: boolean; filename: string }> => {
   const {
     includeAuth = true,
     showErrorNotification = true,
@@ -597,7 +647,7 @@ export const downloadFile = async (endpoint, filename, options = {}) => {
       document.body.removeChild(link);
 
       return { success: true, filename };
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error('Download timed out');
       }
@@ -625,5 +675,5 @@ export default {
   downloadFile,
 
   // Export configuration for testing and debugging
-  config: API_CONFIG
+  config: API_CONFIG as ApiConfig
 };

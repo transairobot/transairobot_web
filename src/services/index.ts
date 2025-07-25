@@ -1,6 +1,3 @@
-/**
- * Services index file
- */
 import api from './api';
 import authService from './auth.service';
 import applicationStoreService from './application-store.service';
@@ -11,7 +8,6 @@ import notificationService from './notification.service';
 import errorHandler from './error-handler.service';
 import transformer from './transformer.service';
 
-// Export all services
 export {
   api,
   authService,
@@ -24,7 +20,6 @@ export {
   transformer
 };
 
-// Default export for convenience
 export default {
   api,
   auth: authService,
