@@ -14,18 +14,17 @@ class AuthService {
    */
   async login(email: string, password: string): Promise<{ user: User }> {
     try {
-      const response = await api.post(
+      const user = await api.post(
         '/auth/login',
         { email, password },
         {
           includeAuth: false,
-          showErrorNotification: true,
-          returnFullResponse: true
+          showErrorNotification: true
         }
       );
 
       return {
-        user: response.data.data
+        user
       };
     } catch (error: any) {
       // Handle specific login errors
@@ -43,14 +42,13 @@ class AuthService {
    */
   async register(userData: Partial<User>): Promise<{ user: User }> {
     try {
-      const response = await api.post('/auth/register', userData, {
+      const user = await api.post('/auth/register', userData, {
         includeAuth: false,
-        showErrorNotification: true,
-        returnFullResponse: true
+        showErrorNotification: true
       });
 
       return {
-        user: response.data.data
+        user
       };
     } catch (error: any) {
       // Handle specific registration errors

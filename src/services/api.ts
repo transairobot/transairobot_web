@@ -5,6 +5,7 @@ import store from '../store';
 import errorHandler from './error-handler.service';
 import transformer from './transformer.service';
 import notificationService from './notification.service';
+import { ApiResponse } from '../types/api';
 
 // API configuration
 const API_CONFIG = {
@@ -70,7 +71,7 @@ const createHeaders = (includeAuth = true, isFormData = false): Record<string, s
  * @param {boolean} returnFullResponse - Whether to return full response object
  * @returns {Promise<any>} Promise resolving to response data
  */
-const handleResponse = async (
+const handleResponse = async <T>(
   response: Response,
   endpoint: string,
   returnFullResponse = false
@@ -86,7 +87,13 @@ const handleResponse = async (
     }
   }
 
-  // Handle different response types
+  // Handle authentication errors first
+  if (response.status === 401) {
+    store.dispatch('auth/logout');
+    notificationService.error('Session expired. Please login again.');
+    return Promise.reject(new Error('Session expired. Please login again.'));
+  }
+
   let data: any;
   const contentType = response.headers.get('content-type');
 
@@ -94,20 +101,33 @@ const handleResponse = async (
     if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
+      // If not JSON, handle as plain text or blob for non-ok responses
+      if (!response.ok) {
+        const errorText = await response.text();
+        const errorMessage = errorText || errorHandler.getErrorMessageByStatusCode(response.status);
+        return Promise.reject(new Error(errorMessage));
+      }
       data = await response.text();
+      // For successful non-JSON responses, return directly
+      return data;
     }
   } catch (error) {
-    // Handle JSON parsing error
     console.error('Response parsing error:', error);
     return Promise.reject(new Error('Invalid response format'));
   }
 
-  // Handle successful responses
+  // For JSON responses, check the custom API response structure
   if (response.ok) {
-    // Transform response data
-    const transformedData = transformer.transformResponse(data, endpoint);
+    const apiResponse = data as ApiResponse<T>;
 
-    // Return full response object if requested (for accessing headers)
+    if (apiResponse.error_code !== 0) {
+      // Handle API-level errors (e.g., validation errors)
+      notificationService.error(apiResponse.error_msg);
+      return Promise.reject(new Error(apiResponse.error_msg));
+    }
+
+    const transformedData = transformer.transformResponse(apiResponse.body, endpoint);
+
     if (returnFullResponse) {
       return {
         data: transformedData,
@@ -119,16 +139,9 @@ const handleResponse = async (
     return transformedData;
   }
 
-  // Handle authentication errors
-  if (response.status === 401) {
-    // For auth endpoints, don't try to refresh token
-    store.dispatch('auth/logout');
-    notificationService.error('Session expired. Please login again.');
-    return Promise.reject(new Error('Session expired. Please login again.'));
-  }
-
-  // Handle specific error status codes
-  const errorMessage = data.message || errorHandler.getErrorMessageByStatusCode(response.status);
+  // Handle other HTTP errors that returned JSON
+  const errorMessage =
+    data.message || data.error_msg || errorHandler.getErrorMessageByStatusCode(response.status);
   return Promise.reject(new Error(errorMessage));
 };
 
@@ -472,11 +485,30 @@ export const uploadFiles = async (
 
           xhr.addEventListener('load', () => {
             clearTimeout(timeoutId);
+
+            if (xhr.status === 401) {
+              store.dispatch('auth/logout');
+              notificationService.error('Session expired. Please login again.');
+              const error: any = new Error('Session expired. Please login again.');
+              error.status = xhr.status;
+              errorHandler.handleError(error, showErrorNotification);
+              reject(error);
+              return;
+            }
+
             if (xhr.status >= 200 && xhr.status < 300) {
               let data;
               try {
                 data = JSON.parse(xhr.responseText);
-                const transformedData = transformer.transformResponse(data, endpoint);
+                const apiResponse = data as ApiResponse<any>;
+
+                if (apiResponse.error_code !== 0) {
+                  notificationService.error(apiResponse.error_msg);
+                  reject(new Error(apiResponse.error_msg));
+                  return;
+                }
+
+                const transformedData = transformer.transformResponse(apiResponse.body, endpoint);
 
                 if (returnFullResponse) {
                   resolve({
@@ -490,24 +522,20 @@ export const uploadFiles = async (
                   resolve(transformedData);
                 }
               } catch (e) {
+                // Handle cases where response is not JSON
                 resolve(xhr.responseText);
               }
             } else {
               let errorMessage;
               try {
                 const errorData = JSON.parse(xhr.responseText);
-                errorMessage = errorData.message || `Error: ${xhr.status}`;
+                errorMessage = errorData.error_msg || errorData.message || `Error: ${xhr.status}`;
               } catch (e) {
-                errorMessage = `Error: ${xhr.status}`;
+                errorMessage = xhr.responseText || `Error: ${xhr.status}`;
               }
 
               const error: any = new Error(errorMessage);
               error.status = xhr.status;
-
-              if (xhr.status === 401) {
-                store.dispatch('auth/logout');
-                notificationService.error('Session expired. Please login again.');
-              }
 
               errorHandler.handleError(error, showErrorNotification);
               reject(error);
