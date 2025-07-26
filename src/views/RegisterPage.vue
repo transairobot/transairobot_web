@@ -225,6 +225,7 @@ export default {
       }
       sendingCode.value = true;
       error.value = null;
+      console.log('sendVerificationCode to:', form.value.email);
       try {
         // This is where you would dispatch a Vuex action to call your API
         await store.dispatch('auth/sendVerificationCode', form.value.email);

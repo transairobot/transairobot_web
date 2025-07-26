@@ -5,14 +5,14 @@ import store from '../store';
 import errorHandler from './error-handler.service';
 import transformer from './transformer.service';
 import notificationService from './notification.service';
-import { ApiResponse } from '../types/api';
+import { ApiResponse, SuccessCode } from '../types/api';
 
 // API configuration
 const API_CONFIG = {
   baseUrl: process.env.VUE_APP_API_URL || 'https://api.example.com',
-  timeout: 30000, // 30 seconds
-  retryAttempts: 2,
-  retryDelay: 1000 // 1 second
+  timeout: 10000, // 10 seconds
+  retryAttempts: 0,
+  retryDelay: 2000 // 2 seconds
 };
 
 interface ApiConfig {
@@ -120,10 +120,10 @@ const handleResponse = async <T>(
   if (response.ok) {
     const apiResponse = data as ApiResponse<T>;
 
-    if (apiResponse.code !== 0) {
+    if (apiResponse.code !== SuccessCode) {
       // Handle API-level errors (e.g., validation errors)
-      notificationService.error(apiResponse.msg);
-      return Promise.reject(new Error(apiResponse.msg));
+      notificationService.error(apiResponse.message);
+      return Promise.reject(new Error(apiResponse.message));
     }
 
     const transformedData = transformer.transformResponse(apiResponse.body, endpoint);
@@ -502,9 +502,9 @@ export const uploadFiles = async (
                 data = JSON.parse(xhr.responseText);
                 const apiResponse = data as ApiResponse<any>;
 
-                if (apiResponse.code !== 0) {
-                  notificationService.error(apiResponse.msg);
-                  reject(new Error(apiResponse.msg));
+                if (apiResponse.code !== SuccessCode) {
+                  notificationService.error(apiResponse.message);
+                  reject(new Error(apiResponse.message));
                   return;
                 }
 

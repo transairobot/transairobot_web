@@ -2,7 +2,6 @@
   <button
     :class="['app-button', `app-button--${variant}`, { 'app-button--block': block }]"
     :disabled="disabled"
-    @click="$emit('click', $event)"
   >
     <slot></slot>
   </button>

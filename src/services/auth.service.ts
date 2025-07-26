@@ -211,6 +211,7 @@ class AuthService {
    * @returns Promise resolving to send status
    */
   async sendEmailCode(email: string): Promise<any> {
+    console.log('Sending verification code to:', email);
     const result = await api.post(
       '/auth/send-email',
       { email },

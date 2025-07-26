@@ -1,5 +1,7 @@
 export interface ApiResponse<T> {
   code: number;
-  msg: string;
+  message: string;
   body: T;
 }
+
+export const SuccessCode = 20000;
