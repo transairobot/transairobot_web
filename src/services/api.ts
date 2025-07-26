@@ -126,7 +126,9 @@ const handleResponse = async <T>(
       return Promise.reject(new Error(apiResponse.message));
     }
 
-    const transformedData = transformer.transformResponse(apiResponse.body, endpoint);
+    console.log('API response:', apiResponse);
+    const transformedData = transformer.transformResponse(apiResponse.data, endpoint);
+    console.log('Transformed API response:', transformedData);
 
     if (returnFullResponse) {
       return {
@@ -508,7 +510,7 @@ export const uploadFiles = async (
                   return;
                 }
 
-                const transformedData = transformer.transformResponse(apiResponse.body, endpoint);
+                const transformedData = transformer.transformResponse(apiResponse.data, endpoint);
 
                 if (returnFullResponse) {
                   resolve({

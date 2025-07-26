@@ -1,6 +1,6 @@
 import api from './api';
 import notificationService from './notification.service';
-import { User } from './admin.service';
+import { RegisterReq, User } from './admin.service';
 
 /**
  * Authentication service
@@ -35,12 +35,12 @@ class AuthService {
 
   /**
    * Register new user
-   * @param userData - User registration data
+   * @param register_req - User registration data
    * @returns Promise resolving to user data
    */
-  async register(userData: Partial<User>): Promise<{ user: User }> {
+  async register(register_req: RegisterReq): Promise<{ user: User }> {
     try {
-      const user = await api.post('/auth/register', userData, {
+      const user = await api.post('/auth/register', register_req, {
         includeAuth: false,
         showErrorNotification: true
       });

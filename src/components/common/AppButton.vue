@@ -68,7 +68,7 @@ export default {
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 8px rgba(233, 51, 51, 0.2);
       animation: gradient-shift 3s ease infinite;
     }
 
@@ -83,7 +83,7 @@ export default {
     color: var(--text-primary);
 
     &:hover {
-      background: var(--bg-tertiary);
+      background: var(--hover-bg);
       transform: translateY(-1px);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }

@@ -256,7 +256,7 @@ export default {
       gap: $spacing-xs;
 
       &:hover {
-        background-color: var(--accent-primary-dark);
+        background-color: var(--accent-primary-dark, #1ccb97ff);
       }
 
       i {
@@ -332,7 +332,7 @@ export default {
           border: none;
 
           &:hover {
-            background-color: var(--accent-primary-dark);
+            background-color: var(--accent-primary-dark, #1ccb97ff);
           }
         }
       }

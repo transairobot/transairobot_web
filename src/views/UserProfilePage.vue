@@ -2,7 +2,13 @@
   <div class="user-profile-page">
     <AppContainer>
       <AuthGuard>
-        <h1 class="page-title">My Profile</h1>
+        <div class="page-header">
+          <h1 class="page-title">My Profile</h1>
+          <router-link to="/" class="home-button">
+            <i class="fas fa-home"></i>
+            Back to Home
+          </router-link>
+        </div>
 
         <!-- Loading State -->
         <LoadingState v-if="loading" message="Loading profile data..." />
@@ -116,7 +122,7 @@
                   </div>
 
                   <div class="form-actions">
-                    <AppButton type="submit" :disabled="updating">
+                    <AppButton variant="secondary" type="submit" :disabled="updating">
                       <span v-if="updating" class="button-spinner"></span>
                       {{ updating ? 'Saving...' : 'Save Changes' }}
                     </AppButton>
@@ -180,7 +186,7 @@
                   </div>
 
                   <div class="form-actions">
-                    <AppButton type="submit" :disabled="updating">
+                    <AppButton variant="secondary" type="submit" :disabled="updating">
                       <span v-if="updating" class="button-spinner"></span>
                       {{ updating ? 'Updating...' : 'Update Password' }}
                     </AppButton>
@@ -245,7 +251,7 @@
                   </div>
 
                   <div class="form-actions">
-                    <AppButton type="submit" :disabled="updating">
+                    <AppButton variant="secondary" type="submit" :disabled="updating">
                       <span v-if="updating" class="button-spinner"></span>
                       {{ updating ? 'Saving...' : 'Save Preferences' }}
                     </AppButton>
@@ -689,10 +695,57 @@ export default {
   padding: 2rem 0;
 }
 
-.page-title {
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 2rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+}
+
+.page-title {
+  margin: 0;
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.home-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  text-decoration: none;
+  border: 1px solid var(--text-secondary);
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    text-decoration: none;
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  i {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
 }
 
 .profile-layout {
@@ -849,7 +902,7 @@ export default {
       .form-control {
         width: 100%;
         padding: 0.75rem;
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--text-secondary);
         border-radius: 0.5rem;
         background-color: var(--input-bg);
         color: var(--text-primary);

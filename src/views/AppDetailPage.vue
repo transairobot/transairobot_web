@@ -408,7 +408,8 @@ export default {
     transition: background-color 0.3s ease, transform 0.3s ease;
 
     &:hover {
-      background-color: var(--accent-primary-dark);
+      // background-color: var(--accent-primary-dark, #1ccb97ff);
+      background-color: var(--accent-primary-dark, #1ccb97ff);
       transform: translateY(-2px);
     }
   }

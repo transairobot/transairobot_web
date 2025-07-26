@@ -60,11 +60,11 @@
           <AppButton
             type="button"
             @click="sendVerificationCode"
-            :disabled="!isEmailValid || sendingCode"
+            :disabled="!isEmailValid || sendingCode || countdown > 0"
             class="send-code-btn"
             variant="text"
           >
-            {{ sendingCode ? 'Sending...' : 'Send Code' }}
+            {{ buttonText }}
           </AppButton>
         </div>
       </div>
@@ -88,7 +88,7 @@
           </span>
           <input
             type="text"
-            v-model="form.verificationCode"
+            v-model="form.verify_code"
             class="form-control"
             required
             placeholder="Enter Verification Code"
@@ -153,7 +153,13 @@
       </div>
 
       <div class="form-actions">
-        <AppButton type="submit" :disabled="loading" block variant="secondary">
+        <AppButton
+          type="button"
+          @click="handleRegister"
+          :disabled="loading"
+          block
+          variant="secondary"
+        >
           {{ loading ? 'Creating Account...' : 'Create Account' }}
         </AppButton>
       </div>
@@ -170,7 +176,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import AuthLayout from '../components/common/AuthLayout.vue';
@@ -192,14 +198,31 @@ export default {
       email: '',
       password: '',
       confirmPassword: '',
-      verificationCode: ''
+      verify_code: ''
     });
 
     const loading = ref(false);
     const sendingCode = ref(false);
     const error = ref(null);
+    const countdown = ref(0);
+    let timer = null;
+
+    onUnmounted(() => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    });
 
     const isEmailValid = computed(() => isValidEmail(form.value.email));
+    const buttonText = computed(() => {
+      if (sendingCode.value) {
+        return 'Sending...';
+      }
+      if (countdown.value > 0) {
+        return `Resend in ${countdown.value}s`;
+      }
+      return 'Send Code';
+    });
 
     const validateForm = () => {
       if (form.value.password !== form.value.confirmPassword) {
@@ -211,11 +234,22 @@ export default {
         error.value = passwordValidation.message;
         return false;
       }
-      if (!form.value.verificationCode) {
+      if (!form.value.verify_code) {
         error.value = 'Please enter the verification code';
         return false;
       }
       return true;
+    };
+
+    const startCountdown = () => {
+      countdown.value = 60;
+      timer = setInterval(() => {
+        countdown.value -= 1;
+        if (countdown.value <= 0) {
+          clearInterval(timer);
+          timer = null;
+        }
+      }, 1000);
     };
 
     const sendVerificationCode = async () => {
@@ -227,9 +261,8 @@ export default {
       error.value = null;
       console.log('sendVerificationCode to:', form.value.email);
       try {
-        // This is where you would dispatch a Vuex action to call your API
         await store.dispatch('auth/sendVerificationCode', form.value.email);
-        // You might want to show a success message to the user
+        startCountdown();
       } catch (err) {
         error.value = err.message || 'Failed to send verification code.';
       } finally {
@@ -238,13 +271,16 @@ export default {
     };
 
     const handleRegister = async () => {
+      console.log('handleRegister function triggered.');
       if (!validateForm()) {
+        console.log('Form validation failed.');
         return;
       }
       try {
         loading.value = true;
         error.value = null;
         await store.dispatch('auth/register', form.value);
+        console.log('Registration successful for:', JSON.stringify(form.value));
         router.push('/');
       } catch (err) {
         error.value = err.message || 'Failed to register. Please try again.';
@@ -260,7 +296,9 @@ export default {
       error,
       isEmailValid,
       handleRegister,
-      sendVerificationCode
+      sendVerificationCode,
+      countdown,
+      buttonText
     };
   }
 };

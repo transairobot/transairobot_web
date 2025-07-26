@@ -32,12 +32,20 @@ export class ApplicationSubmission {
 export class User {
   constructor(
     public id: string,
-    public username: string,
+    public nickname: string,
     public email: string,
-    public verify_code: string,
     public role: 'user' | 'developer' | 'admin',
     public isDisabled: boolean,
     public createdAt: Date
+  ) {}
+}
+
+export class RegisterReq {
+  constructor(
+    public email: string,
+    public password: string,
+    public nickname: string,
+    public verify_code: string
   ) {}
 }
 
