@@ -28,9 +28,7 @@ class AuthService {
       };
     } catch (error: any) {
       // Handle specific login errors
-      if (error.message === 'Invalid credentials') {
-        notificationService.error('Invalid email or password. Please try again.');
-      }
+      notificationService.error(error.message);
       throw error;
     }
   }
@@ -214,7 +212,7 @@ class AuthService {
    */
   async sendEmailCode(email: string): Promise<any> {
     const result = await api.post(
-      '/auth/send_email_code',
+      '/auth/send-email',
       { email },
       {
         includeAuth: false

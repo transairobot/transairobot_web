@@ -6,7 +6,7 @@ echo "Deploying TransAIRobot website to production environment..."
 # Set variables
 DEPLOY_PATH="./dist"
 PROD_SERVER="admin@8.137.160.32"
-PROD_PATH="/var/www/transairobot.com"
+PROD_PATH="~/www/transairobot.com"
 
 # Compress the dist folder
 echo "Compressing build files..."

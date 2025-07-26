@@ -34,6 +34,7 @@ export class User {
     public id: string,
     public username: string,
     public email: string,
+    public verify_code: string,
     public role: 'user' | 'developer' | 'admin',
     public isDisabled: boolean,
     public createdAt: Date
