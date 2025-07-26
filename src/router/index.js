@@ -56,7 +56,7 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/robot/:id',
+    path: '/robots/:id',
     name: 'RobotDetail',
     component: lazyLoadView('RobotDetailPage'),
     meta: { requiresAuth: true }
