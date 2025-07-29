@@ -31,24 +31,22 @@ class TransformerService {
   transformResponse(data: any, endpoint: string): any {
     if (!data) return data;
 
-    const transformedData = { ...data };
-
     if (endpoint.includes('/applications/list')) {
-      if (transformedData.items && Array.isArray(transformedData.items)) {
-        transformedData.items = transformedData.items.map((item: any) =>
-          this.transformApplicationItem(item)
-        );
+      let transformedData = data;
+      if (transformedData && Array.isArray(transformedData)) {
+        transformedData = transformedData.map((item: any) => this.transformApplicationItem(item));
       }
+      return transformedData;
     }
 
     if (endpoint.includes('/robots/list')) {
-      if (transformedData.items && Array.isArray(transformedData.items)) {
-        transformedData.items = transformedData.items.map((item: any) =>
-          this.transformRobotItem(item)
-        );
+      let transformedData = data;
+      if (transformedData && Array.isArray(transformedData)) {
+        transformedData = transformedData.map((item: any) => this.transformRobotItem(item));
       }
     }
 
+    const transformedData = { ...data };
     return transformedData;
   }
 

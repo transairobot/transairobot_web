@@ -52,6 +52,7 @@ import SearchBar from '../components/common/SearchBar.vue';
 import LoadingState from '../components/common/LoadingState.vue';
 import ErrorState from '../components/common/ErrorState.vue';
 import AppApplicationCard from '../components/store/AppApplicationCard.vue';
+import appService from '../services/application-store.service';
 
 export default {
   name: 'AppStorePage',
@@ -80,98 +81,24 @@ export default {
       { id: 'utilities', name: 'Utilities' }
     ];
 
-    // Mock applications data
-    const mockApplications = [
-      {
-        id: 'app1',
-        name: 'PathFinder Pro',
-        description: 'Advanced navigation system with obstacle avoidance and dynamic path planning',
-        icon: 'https://via.placeholder.com/64',
-        category: ['navigation'],
-        rating: 4.7,
-        downloads: 12500
-      },
-      {
-        id: 'app2',
-        name: 'ObjectVision',
-        description: 'Real-time object detection and classification using advanced neural networks',
-        icon: 'https://via.placeholder.com/64',
-        category: ['vision'],
-        rating: 4.2,
-        downloads: 8700
-      },
-      {
-        id: 'app3',
-        name: 'GripMaster',
-        description: 'Precision control for robotic arms with adaptive force feedback',
-        icon: 'https://via.placeholder.com/64',
-        category: ['manipulation'],
-        rating: 4.8,
-        downloads: 5300
-      },
-      {
-        id: 'app4',
-        name: 'RobotChat',
-        description: 'Natural language processing for human-robot interaction',
-        icon: 'https://via.placeholder.com/64',
-        category: ['communication'],
-        rating: 3.9,
-        downloads: 15800
-      },
-      {
-        id: 'app5',
-        name: 'BatteryOptimizer',
-        description: 'Maximize battery life with intelligent power management',
-        icon: 'https://via.placeholder.com/64',
-        category: ['utilities'],
-        rating: 4.5,
-        downloads: 22000
-      },
-      {
-        id: 'app6',
-        name: 'SensorFusion',
-        description: 'Combine data from multiple sensors for improved perception',
-        icon: 'https://via.placeholder.com/64',
-        category: ['vision', 'navigation'],
-        rating: 4.6,
-        downloads: 7200
-      },
-      {
-        id: 'app7',
-        name: 'MotionPlanner',
-        description: 'Smooth trajectory planning for efficient robot movement',
-        icon: 'https://via.placeholder.com/64',
-        category: ['navigation', 'manipulation'],
-        rating: 4.3,
-        downloads: 9500
-      },
-      {
-        id: 'app8',
-        name: 'DiagnosticSuite',
-        description: 'Comprehensive system diagnostics and troubleshooting tools',
-        icon: 'https://via.placeholder.com/64',
-        category: ['utilities'],
-        rating: 4.1,
-        downloads: 18300
-      }
-    ];
-
     const fetchApplications = async () => {
       loading.value = true;
       error.value = false;
 
       try {
-        // In a real app, this would be an API call
-        // await api.getApplications()
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Use mock data for now
-        applications.value = mockApplications;
+        console.log('fetchApplications');
+        const result = await appService.getApplications();
+        if (Array.isArray(result)) {
+          applications.value = result;
+        } else if (result) {
+          applications.value = [result];
+        } else {
+          applications.value = [];
+        }
       } catch (err) {
         console.error('Failed to fetch applications:', err);
         error.value = true;
+        applications.value = []; // Ensure it's an array on error
       } finally {
         loading.value = false;
       }
@@ -181,13 +108,15 @@ export default {
       return applications.value.filter(app => {
         // Filter by category
         const categoryMatch =
-          selectedCategory.value === 'all' || app.category.includes(selectedCategory.value);
+          selectedCategory.value === 'all' ||
+          (app.category && app.category.includes(selectedCategory.value));
 
         // Filter by search query
         const searchMatch =
           !searchQuery.value ||
-          app.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-          app.description.toLowerCase().includes(searchQuery.value.toLowerCase());
+          (app.name && app.name.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+          (app.description &&
+            app.description.toLowerCase().includes(searchQuery.value.toLowerCase()));
 
         return categoryMatch && searchMatch;
       });

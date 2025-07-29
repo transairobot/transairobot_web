@@ -129,8 +129,10 @@ const handleResponse = async <T>(
     console.log('API response:', apiResponse);
     const transformedData = transformer.transformResponse(apiResponse.data, endpoint);
     console.log('Transformed API response:', transformedData);
+    console.log('type:', typeof transformedData);
 
     if (returnFullResponse) {
+      console.log('returnFullResponse');
       return {
         data: transformedData,
         headers: response.headers,

@@ -50,17 +50,15 @@ export class Installation {
 }
 
 class ApplicationStoreService {
-  async getApplications(
-    filters: any = {},
-    page = 1,
-    limit = 10
-  ): Promise<PagedResult<Application>> {
+  async getApplications(filters: any = {}, page = 1, limit = 10): Promise<Array<Application>> {
     const params = {
       page,
       limit,
       ...filters
     };
-    return await api.get('/applications/list', { params });
+    const apps = await api.get('/applications/list', { params });
+    console.log(apps.toString());
+    return apps;
   }
 
   async searchApplications(

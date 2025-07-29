@@ -33,7 +33,8 @@
           <div class="app-application-card__downloads">
             <span class="app-application-card__downloads-icon">↓</span>
             <span class="app-application-card__downloads-count">{{
-              formatDownloads(application.downloads)
+              // formatDownloads(application.downloads)
+              0
             }}</span>
           </div>
         </div>
