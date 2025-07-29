@@ -2,7 +2,7 @@
   <AppCard hoverable class="app-application-card" @click="navigateToDetail">
     <div class="app-application-card__content">
       <div class="app-application-card__icon">
-        <img :src="application.icon" :alt="`${application.name} icon`" />
+        <img :src="application.iconUrl" :alt="`${application.name} icon`" />
         <div class="app-application-card__icon-overlay">
           <span class="app-application-card__view-details">View Details</span>
         </div>
@@ -13,7 +13,7 @@
           {{ truncateDescription(application.description) }}
         </p>
         <div class="app-application-card__meta">
-          <div class="app-application-card__rating">
+          <div class="app-application-card__rating" v-if="application.rating">
             <span class="app-application-card__stars">
               <span
                 v-for="i in 5"
@@ -32,10 +32,7 @@
           </div>
           <div class="app-application-card__downloads">
             <span class="app-application-card__downloads-icon">↓</span>
-            <span class="app-application-card__downloads-count">{{
-              // formatDownloads(application.downloads)
-              0
-            }}</span>
+            <span class="app-application-card__downloads-count">N/A</span>
           </div>
         </div>
         <div class="app-application-card__category-tags">
@@ -67,14 +64,7 @@ export default {
       type: Object,
       required: true,
       validator: app => {
-        return (
-          app.id &&
-          app.name &&
-          app.description &&
-          app.icon &&
-          typeof app.rating === 'number' &&
-          typeof app.downloads === 'number'
-        );
+        return app.id && app.name && app.description && app.iconUrl;
       }
     }
   },
@@ -99,12 +89,16 @@ export default {
       router.push(`/app/${props.application.id}`);
     };
 
-    // Display up to 2 categories for the application
+    // Display category for the application
     const displayCategories = computed(() => {
-      if (!props.application.category || !Array.isArray(props.application.category)) {
+      if (!props.application.category) {
         return [];
       }
-      return props.application.category.slice(0, 2);
+      // Handle both string and array categories
+      if (Array.isArray(props.application.category)) {
+        return props.application.category.slice(0, 2);
+      }
+      return [props.application.category];
     });
 
     return {

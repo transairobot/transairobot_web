@@ -22,7 +22,7 @@
 
             <div class="app-detail-main">
               <div class="app-detail-icon">
-                <img :src="app.icon" :alt="`${app.name} icon`" />
+                <img :src="app.iconUrl" :alt="`${app.name} icon`" />
               </div>
 
               <div class="app-detail-info">
@@ -31,7 +31,7 @@
                 <div class="app-detail-meta">
                   <div class="app-detail-developer">
                     <span class="meta-label">Developer:</span>
-                    <span class="meta-value">{{ app.developer }}</span>
+                    <span class="meta-value">{{ app.developerId }}</span>
                   </div>
 
                   <div class="app-detail-version">
@@ -39,7 +39,7 @@
                     <span class="meta-value">{{ app.version }}</span>
                   </div>
 
-                  <div class="app-detail-rating">
+                  <div class="app-detail-rating" v-if="app.rating">
                     <span class="app-detail-stars">
                       <span
                         v-for="i in 5"
@@ -51,19 +51,12 @@
                       </span>
                     </span>
                     <span class="app-detail-rating-value">{{ app.rating.toFixed(1) }}</span>
-                    <span class="app-detail-downloads">
-                      ({{ formatDownloads(app.downloads) }} downloads)
-                    </span>
                   </div>
                 </div>
 
-                <div class="app-detail-categories" v-if="app.category && app.category.length">
-                  <span
-                    v-for="(category, index) in app.category"
-                    :key="index"
-                    class="app-detail-category-tag"
-                  >
-                    {{ category }}
+                <div class="app-detail-categories" v-if="app.category">
+                  <span class="app-detail-category-tag">
+                    {{ app.category }}
                   </span>
                 </div>
 
@@ -146,7 +139,7 @@ export default {
     const appId = computed(() => route.params.id);
     const loading = computed(() => store.getters['apps/isLoading']);
     const app = computed(() => store.getters['apps/currentApp']);
-    const error = ref(false);
+    const error = computed(() => store.state.apps.error);
 
     const activeTab = ref('description');
     const tabs = [
@@ -162,21 +155,11 @@ export default {
 
     const fetchAppDetails = async () => {
       try {
-        error.value = false;
         await store.dispatch('apps/fetchAppDetails', appId.value);
       } catch (err) {
         console.error('Failed to fetch app details:', err);
-        error.value = true;
+        // Error is handled in the store
       }
-    };
-
-    const formatDownloads = downloads => {
-      if (downloads >= 1000000) {
-        return (downloads / 1000000).toFixed(1) + 'M';
-      } else if (downloads >= 1000) {
-        return (downloads / 1000).toFixed(1) + 'K';
-      }
-      return downloads.toString();
     };
 
     const goBack = () => {
@@ -220,7 +203,6 @@ export default {
       tabs,
       renderedDescription,
       fetchAppDetails,
-      formatDownloads,
       goBack,
       installApp,
       shareApp,

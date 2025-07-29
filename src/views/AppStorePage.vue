@@ -46,13 +46,13 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
+import { useStore } from 'vuex';
 import AppHeader from '../components/common/AppHeader.vue';
 import AppFooter from '../components/common/AppFooter.vue';
 import SearchBar from '../components/common/SearchBar.vue';
 import LoadingState from '../components/common/LoadingState.vue';
 import ErrorState from '../components/common/ErrorState.vue';
 import AppApplicationCard from '../components/store/AppApplicationCard.vue';
-import appService from '../services/application-store.service';
 
 export default {
   name: 'AppStorePage',
@@ -65,11 +65,14 @@ export default {
     AppApplicationCard
   },
   setup() {
-    const applications = ref([]);
-    const loading = ref(true);
-    const error = ref(false);
+    const store = useStore();
     const searchQuery = ref('');
     const selectedCategory = ref('all');
+
+    // Get data from store
+    const applications = computed(() => store.getters['apps/allApps']);
+    const loading = computed(() => store.getters['apps/isLoading']);
+    const error = computed(() => store.state.apps.error);
 
     // Mock categories
     const categories = [
@@ -82,25 +85,10 @@ export default {
     ];
 
     const fetchApplications = async () => {
-      loading.value = true;
-      error.value = false;
-
       try {
-        console.log('fetchApplications');
-        const result = await appService.getApplications();
-        if (Array.isArray(result)) {
-          applications.value = result;
-        } else if (result) {
-          applications.value = [result];
-        } else {
-          applications.value = [];
-        }
+        await store.dispatch('apps/fetchApps');
       } catch (err) {
         console.error('Failed to fetch applications:', err);
-        error.value = true;
-        applications.value = []; // Ensure it's an array on error
-      } finally {
-        loading.value = false;
       }
     };
 
