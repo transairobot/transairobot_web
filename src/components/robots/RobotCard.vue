@@ -24,9 +24,8 @@
             </svg>
           </div>
         </div>
-        <div class="robot-card__status" :class="`robot-card__status--${robot.status}`">
+        <div class="robot-card__status" :class="`robot-card__status--${robot.connection_status}`">
           <span class="status-indicator"></span>
-          <span class="status-text">{{ statusText }}</span>
         </div>
       </div>
       <div class="robot-card__body">
@@ -107,15 +106,6 @@ export default {
     }
   },
   computed: {
-    statusText() {
-      const statusMap = {
-        online: 'Online',
-        offline: 'Offline',
-        maintenance: 'Maintenance'
-      };
-      console.log('connection_status', this.robot.connection_status);
-      return statusMap[this.robot.connection_status] || 'Unknown';
-    },
     typeText() {
       const typeMap = {
         mobile: 'Mobile Robot',

@@ -24,6 +24,33 @@
           @manage="manageRobot"
           @robot-added="handleRobotAdded"
         />
+
+        <app-modal v-model="isManageModalVisible" @close="closeManageModal" title="Manage Robot">
+          <div v-if="editingRobot" class="manage-robot-modal">
+            <div class="form-group">
+              <label for="robot-name">Robot Name</label>
+              <input
+                type="text"
+                id="robot-name"
+                v-model="newRobotName"
+                placeholder="Enter new robot name"
+                class="form-control"
+              />
+            </div>
+            <div class="modal-actions">
+              <app-button @click="closeManageModal" variant="secondary" :disabled="isUpdatingRobot">
+                Cancel
+              </app-button>
+              <app-button
+                @click="handleUpdateRobot"
+                :loading="isUpdatingRobot"
+                :disabled="!newRobotName"
+              >
+                Save Changes
+              </app-button>
+            </div>
+          </div>
+        </app-modal>
       </div>
     </main>
     <AppFooter />
@@ -39,6 +66,8 @@ import AppFooter from '../components/common/AppFooter.vue';
 import SearchBar from '../components/common/SearchBar.vue';
 import RobotList from '../components/robots/RobotList.vue';
 import notificationService from '../services/notification.service';
+import AppModal from '../components/common/AppModal.vue';
+import AppButton from '../components/common/AppButton.vue';
 
 export default {
   name: 'MyRobotsPage',
@@ -46,13 +75,19 @@ export default {
     AppHeader,
     AppFooter,
     SearchBar,
-    RobotList
+    RobotList,
+    AppModal,
+    AppButton
   },
   setup() {
     const store = useStore();
     const router = useRouter();
 
     const searchQuery = ref('');
+    const isManageModalVisible = ref(false);
+    const editingRobot = ref(null);
+    const newRobotName = ref('');
+    const isUpdatingRobot = ref(false);
 
     const loading = computed(() => store.getters['robots/isLoading']);
     const error = computed(() => store.getters['robots/error']);
@@ -87,7 +122,36 @@ export default {
     };
 
     const manageRobot = robot => {
-      router.push(`/robots/${robot.id}/manage`);
+      editingRobot.value = { ...robot };
+      newRobotName.value = robot.name;
+      isManageModalVisible.value = true;
+    };
+
+    const closeManageModal = () => {
+      isManageModalVisible.value = false;
+      editingRobot.value = null;
+      newRobotName.value = '';
+    };
+
+    const handleUpdateRobot = async () => {
+      if (!newRobotName.value.trim()) {
+        notificationService.error('Robot name cannot be empty.');
+        return;
+      }
+      isUpdatingRobot.value = true;
+      try {
+        await store.dispatch('robots/updateRobot', {
+          id: editingRobot.value.id,
+          name: newRobotName.value.trim()
+        });
+        notificationService.success('Robot updated successfully.');
+        closeManageModal();
+      } catch (error) {
+        notificationService.error('Failed to update robot.');
+        console.error('Error updating robot:', error);
+      } finally {
+        isUpdatingRobot.value = false;
+      }
     };
 
     const handleRobotAdded = newRobot => {
@@ -108,7 +172,13 @@ export default {
       selectRobot,
       viewRobot,
       manageRobot,
-      handleRobotAdded
+      handleRobotAdded,
+      isManageModalVisible,
+      editingRobot,
+      newRobotName,
+      isUpdatingRobot,
+      closeManageModal,
+      handleUpdateRobot
     };
   }
 };
@@ -158,6 +228,39 @@ export default {
         width: 100%;
       }
     }
+  }
+}
+
+.manage-robot-modal {
+  .form-group {
+    margin-bottom: 1.5rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--divider);
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 1rem;
+
+      &:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+      }
+    }
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
   }
 }
 </style>

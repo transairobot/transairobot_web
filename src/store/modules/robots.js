@@ -163,6 +163,16 @@ export default {
         throw error;
       }
     },
+    async updateRobot({ commit }, { id, ...data }) {
+      try {
+        const updatedRobot = await robotManagementService.updateRobot(id, data);
+        commit('SET_ROBOT', updatedRobot);
+        return updatedRobot;
+      } catch (error) {
+        console.error(`Error updating robot ${id}:`, error);
+        throw error;
+      }
+    },
     async uninstallApp({ commit }, { robotId, appId }) {
       try {
         await robotManagementService.stopApplication(robotId, appId);

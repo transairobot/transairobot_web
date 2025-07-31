@@ -63,7 +63,7 @@ class RobotManagementService {
   }
 
   async updateRobot(robotId: string, robotData: Partial<Robot>): Promise<Robot> {
-    const result = await api.put(`/robots/${robotId}`, robotData);
+    const result = await api.put(`/robots/update/${robotId}`, robotData);
     notificationService.success('Robot updated successfully');
     return result;
   }
