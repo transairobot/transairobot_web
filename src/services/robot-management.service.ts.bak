@@ -9,13 +9,10 @@ export class Robot {
     public id: string,
     public name: string,
     public model: string,
-    public owner_id: string,
-    public connection_status: 'online' | 'offline' | 'maintenance',
-    public last_seen: Date
+    public ownerId: string,
+    public status: 'online' | 'offline' | 'maintenance',
+    public lastSeen: Date
   ) {}
-  toString(): string {
-    return `Robot(id=${this.id}, name=${this.name}, model=${this.model}, owner_id=${this.owner_id}, connection_status=${this.connection_status}, last_seen=${this.last_seen})`;
-  }
 }
 
 export class RobotStatus {
@@ -42,13 +39,7 @@ export class NetworkConfig {
 }
 
 class RobotManagementService {
-  async addRobot(bindCode: string): Promise<Robot> {
-    const result = await api.post(`/robots/add_robot/${bindCode}`, {});
-    notificationService.success('Robot added successfully');
-    return result;
-  }
-
-  async getRobots(filters: any = {}, page = 1, limit = 10): Promise<Array<Robot>> {
+  async getRobots(filters: any = {}, page = 1, limit = 10): Promise<PagedResult<Robot>> {
     const params = {
       page,
       limit,
@@ -58,8 +49,7 @@ class RobotManagementService {
   }
 
   async getRobotDetails(robotId: string): Promise<Robot> {
-    const robot = await api.get(`/robots/${robotId}`);
-    return robot;
+    return await api.get(`/robots/${robotId}`);
   }
 
   async updateRobot(robotId: string, robotData: Partial<Robot>): Promise<Robot> {

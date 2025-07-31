@@ -1,4 +1,4 @@
-import robotService from '../../services/robot.service';
+import robotManagementService from '../../services/robot-management.service';
 
 export default {
   namespaced: true,
@@ -35,6 +35,9 @@ export default {
       } else {
         state.robots.push(robot);
       }
+    },
+    ADD_ROBOT(state, robot) {
+      state.robots.push(robot);
     },
     SET_CURRENT_ROBOT(state, robot) {
       state.currentRobot = robot;
@@ -93,55 +96,48 @@ export default {
     }
   },
   actions: {
-    fetchRobots({ commit }) {
+    async fetchRobots({ commit }) {
       commit('SET_LOADING', true);
-      // API call would go here
-      setTimeout(() => {
-        const mockRobots = [
-          {
-            id: '1',
-            name: 'Home Assistant',
-            icon: '/assets/icons/robot1.png',
-            status: 'online',
-            type: 'mobile-arm'
-          },
-          {
-            id: '2',
-            name: 'Factory Bot',
-            icon: '/assets/icons/robot2.png',
-            status: 'offline',
-            type: 'arm'
-          }
-        ];
-        commit('SET_ROBOTS', mockRobots);
+      commit('SET_ERROR', null);
+      try {
+        const response = await robotManagementService.getRobots();
+        commit('SET_ROBOTS', response || []);
+      } catch (error) {
+        commit('SET_ERROR', 'Failed to fetch robots.');
+        console.error('Error fetching robots:', error);
+      } finally {
         commit('SET_LOADING', false);
-      }, 500);
+      }
     },
-    fetchRobotById({ commit }, robotId) {
+    async addRobot({ dispatch }, bindCode) {
+      try {
+        const newRobot = await robotManagementService.addRobot(bindCode);
+        await dispatch('fetchRobots');
+        return newRobot;
+      } catch (error) {
+        console.error('Error adding robot:', error);
+        throw error;
+      }
+    },
+    async fetchRobotById({ commit }, robotId) {
       commit('SET_LOADING', true);
-      // API call would go here
-      setTimeout(() => {
-        const mockRobot = {
-          id: robotId,
-          name: 'Home Assistant',
-          icon: '/assets/icons/robot1.png',
-          status: 'online',
-          type: 'mobile-arm',
-          installedApps: [
-            { id: '1', name: 'Robot Navigation', icon: '/assets/icons/nav.png', version: '1.0.0' },
-            { id: '3', name: 'Vision System', icon: '/assets/icons/vision.png', version: '2.1.0' }
-          ],
-          lastConnected: new Date().toISOString()
-        };
-        commit('SET_ROBOT', mockRobot);
-        commit('SET_CURRENT_ROBOT', mockRobot);
+      commit('SET_ERROR', null);
+      try {
+        const robot = await robotManagementService.getRobotDetails(robotId);
+        console.log('Fetched robot details:', robot);
+        commit('SET_ROBOT', robot);
+        commit('SET_CURRENT_ROBOT', robot);
+      } catch (error) {
+        commit('SET_ERROR', 'Failed to fetch robot details.');
+        console.error(`Error fetching robot ${robotId}:`, error);
+      } finally {
         commit('SET_LOADING', false);
-      }, 500);
+      }
     },
     async installApp({ commit, rootGetters }, { robotId, appId }) {
       commit('SET_INSTALLATION_STATUS', { inProgress: true, success: null, error: null });
       try {
-        await robotService.installApp(robotId, appId);
+        await robotManagementService.startApplication(robotId, appId);
         const app = rootGetters['apps/currentApp'] || {
           id: appId,
           name: 'Unknown App',
@@ -169,22 +165,12 @@ export default {
     },
     async uninstallApp({ commit }, { robotId, appId }) {
       try {
-        await robotService.removeApp(robotId, appId);
+        await robotManagementService.stopApplication(robotId, appId);
         commit('REMOVE_APP_FROM_ROBOT', { robotId, appId });
       } catch (error) {
         console.error(`Failed to uninstall app: ${error}`);
-        // Optionally, dispatch an action to show a notification to the user
         throw error;
       }
-    },
-    updateApp({ commit, dispatch }, { robotId, appId }) {
-      // This would typically involve uninstalling and reinstalling the app
-      // For now, we'll just simulate a successful update
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve();
-        }, 1500);
-      });
     },
     resetInstallationStatus({ commit }) {
       commit('SET_INSTALLATION_STATUS', { inProgress: false, success: null, error: null });

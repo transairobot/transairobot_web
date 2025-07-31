@@ -22,7 +22,7 @@
           @select="selectRobot"
           @view="viewRobot"
           @manage="manageRobot"
-          @add="addNewRobot"
+          @robot-added="handleRobotAdded"
         />
       </div>
     </main>
@@ -38,6 +38,7 @@ import AppHeader from '../components/common/AppHeader.vue';
 import AppFooter from '../components/common/AppFooter.vue';
 import SearchBar from '../components/common/SearchBar.vue';
 import RobotList from '../components/robots/RobotList.vue';
+import notificationService from '../services/notification.service';
 
 export default {
   name: 'MyRobotsPage',
@@ -52,28 +53,25 @@ export default {
     const router = useRouter();
 
     const searchQuery = ref('');
+
     const loading = computed(() => store.getters['robots/isLoading']);
-    const error = ref('');
+    const error = computed(() => store.getters['robots/error']);
     const robots = computed(() => store.getters['robots/allRobots']);
 
     const filteredRobots = computed(() => {
-      if (!searchQuery.value) return robots.value;
-
+      if (!searchQuery.value) {
+        return robots.value;
+      }
       const query = searchQuery.value.toLowerCase();
       return robots.value.filter(
         robot =>
-          robot.name.toLowerCase().includes(query) || robot.type.toLowerCase().includes(query)
+          robot.name.toLowerCase().includes(query) ||
+          (robot.model && robot.model.toLowerCase().includes(query))
       );
     });
 
-    const fetchRobots = async () => {
-      try {
-        error.value = '';
-        await store.dispatch('robots/fetchRobots');
-      } catch (err) {
-        error.value = 'Failed to load your robots. Please try again.';
-        console.error('Error fetching robots:', err);
-      }
+    const fetchRobots = () => {
+      store.dispatch('robots/fetchRobots');
     };
 
     const searchRobots = query => {
@@ -92,9 +90,9 @@ export default {
       router.push(`/robots/${robot.id}/manage`);
     };
 
-    const addNewRobot = () => {
-      // This would typically open a modal or navigate to a new robot page
-      alert('Add new robot functionality will be implemented in a future task');
+    const handleRobotAdded = newRobot => {
+      notificationService.success(`Robot "${newRobot.name}" has been successfully added.`);
+      fetchRobots();
     };
 
     onMounted(() => {
@@ -110,7 +108,7 @@ export default {
       selectRobot,
       viewRobot,
       manageRobot,
-      addNewRobot
+      handleRobotAdded
     };
   }
 };

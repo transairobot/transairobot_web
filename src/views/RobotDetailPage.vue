@@ -65,7 +65,7 @@
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                Last connected {{ formatLastConnected }}
+                Last connected {{ formatLastSeen }}
               </div>
             </div>
           </div>
@@ -89,7 +89,7 @@
               </div>
               <div class="detail-item">
                 <span class="detail-label">Last Connected:</span>
-                <span class="detail-value">{{ formatLastConnected }}</span>
+                <span class="detail-value">{{ formatLastSeen }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Applications:</span>
@@ -303,15 +303,15 @@ export default {
         offline: 'Offline',
         maintenance: 'Maintenance'
       };
-
-      return statusMap[robot.value.status] || 'Unknown';
+      console.log('robot=' + robot.value.toString());
+      return statusMap[robot.value.connection_status] || 'Unknown';
     });
 
     // Format last connected time
-    const formatLastConnected = computed(() => {
-      if (!robot.value || !robot.value.lastConnected) return 'Never';
+    const formatLastSeen = computed(() => {
+      if (!robot.value || !robot.value.last_seen) return 'Never';
 
-      const date = new Date(robot.value.lastConnected);
+      const date = new Date(robot.value.last_seen * 1000);
       const now = new Date();
       const diffMs = now - date;
       const diffMins = Math.floor(diffMs / 60000);
@@ -398,7 +398,7 @@ export default {
     };
 
     const goBack = () => {
-      router.push('/robots');
+      router.push('/my-robots');
     };
 
     onMounted(() => {
@@ -420,7 +420,7 @@ export default {
       handleInstallationComplete,
       formatRobotType,
       formatRobotStatus,
-      formatLastConnected,
+      formatLastSeen,
       searchApps,
       filteredApps,
       goBack

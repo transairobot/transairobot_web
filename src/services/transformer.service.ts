@@ -44,6 +44,7 @@ class TransformerService {
       if (transformedData && Array.isArray(transformedData)) {
         transformedData = transformedData.map((item: any) => this.transformRobotItem(item));
       }
+      return transformedData;
     }
 
     const transformedData = { ...data };

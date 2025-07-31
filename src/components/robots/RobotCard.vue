@@ -49,7 +49,7 @@
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          <span>{{ formatLastConnected }}</span>
+          <span>{{ formatLastSeen }}</span>
         </div>
         <div class="robot-card__actions">
           <button class="action-button" @click.stop="$emit('view', robot)">
@@ -113,7 +113,8 @@ export default {
         offline: 'Offline',
         maintenance: 'Maintenance'
       };
-      return statusMap[this.robot.status] || 'Unknown';
+      console.log('connection_status', this.robot.connection_status);
+      return statusMap[this.robot.connection_status] || 'Unknown';
     },
     typeText() {
       const typeMap = {
@@ -123,10 +124,10 @@ export default {
       };
       return typeMap[this.robot.type] || 'Robot';
     },
-    formatLastConnected() {
-      if (!this.robot.lastConnected) return 'Never connected';
+    formatLastSeen() {
+      if (!this.robot.last_seen) return 'Never connected';
 
-      const date = new Date(this.robot.lastConnected);
+      const date = new Date(this.robot.last_seen);
       const now = new Date();
       const diffMs = now - date;
       const diffMins = Math.floor(diffMs / 60000);
