@@ -143,7 +143,7 @@ export default {
     async installApp({ commit, rootGetters }, { robotId, appId }) {
       commit('SET_INSTALLATION_STATUS', { inProgress: true, success: null, error: null });
       try {
-        await robotManagementService.startApplication(robotId, appId);
+        await robotManagementService.installRobotApp(robotId, appId);
         const app = rootGetters['apps/currentApp'] || {
           id: appId,
           name: 'Unknown App',

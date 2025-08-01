@@ -1,5 +1,5 @@
 <template>
-  <div class="my-robots-page">
+  <div class="robots-page">
     <AppHeader />
     <main>
       <div class="container">
@@ -202,7 +202,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.my-robots-page {
+.robots-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;

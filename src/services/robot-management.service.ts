@@ -68,6 +68,11 @@ class RobotManagementService {
     return robot;
   }
 
+  async installRobotApp(robotId: string, app_id: string): Promise<Robot> {
+    const robot = await api.put(`/robots/install_app/${robotId}/${app_id}`, {});
+    return robot;
+  }
+
   async updateRobot(robotId: string, robotData: Partial<Robot>): Promise<Robot> {
     const result = await api.put(`/robots/update/${robotId}`, robotData);
     notificationService.success('Robot updated successfully');

@@ -312,7 +312,7 @@ export default {
 
     const viewRobot = () => {
       if (selectedRobot.value) {
-        router.push(`/robot/${selectedRobot.value.id}`);
+        router.push(`/robots/${selectedRobot.value.id}`);
         showModal.value = false;
       }
     };

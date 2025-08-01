@@ -19,7 +19,7 @@
           <ul>
             <li><router-link to="/" @click="closeMobileMenu">Home</router-link></li>
             <li><router-link to="/app-store" @click="closeMobileMenu">App Store</router-link></li>
-            <li><router-link to="/my-robots" @click="closeMobileMenu">My Robots</router-link></li>
+            <li><router-link to="/robots" @click="closeMobileMenu">My Robots</router-link></li>
             <li><router-link to="/developer" @click="closeMobileMenu">Developer</router-link></li>
             <li class="mobile-only">
               <div class="mobile-theme-toggle">

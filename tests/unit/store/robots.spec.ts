@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import robotService from '@/services/robot.service';
+import robotService from '@/services/robot-management.service';
 import robotsModule from '@/store/modules/robots.js';
 
 vi.mock('@/services/robot.service', () => ({
@@ -196,7 +196,7 @@ describe('Robots Store Module', () => {
       const fetchRobotByIdAction = vi.fn(async ({ commit }, id) => {
         commit('SET_LOADING', true);
         try {
-          const robot = await robotService.getRobotById(id);
+          const robot = await robotService.getRobotDetails(id);
           commit('SET_ROBOT', robot);
           commit('SET_CURRENT_ROBOT', robot);
         } finally {
@@ -208,7 +208,7 @@ describe('Robots Store Module', () => {
       await fetchRobotByIdAction(store, robotId);
 
       // Verify the service was called
-      expect(robotService.getRobotById).toHaveBeenCalledWith(robotId);
+      expect(robotService.getRobotDetails).toHaveBeenCalledWith(robotId);
 
       // Verify the commits were made
       expect(store.commit).toHaveBeenCalledWith('SET_LOADING', true);
@@ -236,7 +236,7 @@ describe('Robots Store Module', () => {
         { robotId, appId }
       );
 
-      expect(robotService.installApp).toHaveBeenCalledWith(robotId, appId);
+      expect(robotService.installRobotApp).toHaveBeenCalledWith(robotId, appId);
       expect(store.commit).toHaveBeenCalledWith('SET_INSTALLATION_STATUS', {
         inProgress: true,
         success: null,
@@ -257,7 +257,7 @@ describe('Robots Store Module', () => {
       // We need to use the actual action from the module
       await robotsModule.actions.uninstallApp({ commit: store.commit }, { robotId, appId });
 
-      expect(robotService.removeApp).toHaveBeenCalledWith(robotId, appId);
+      expect(robotService.removeRobot).toHaveBeenCalledWith(robotId, appId);
       expect(store.commit).toHaveBeenCalledWith('REMOVE_APP_FROM_ROBOT', { robotId, appId });
     });
   });

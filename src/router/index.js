@@ -50,7 +50,7 @@ const routes = [
     component: lazyLoadView('AppDetailPage')
   },
   {
-    path: '/my-robots',
+    path: '/robots',
     name: 'MyRobots',
     component: lazyLoadView('MyRobotsPage'),
     meta: { requiresAuth: true }

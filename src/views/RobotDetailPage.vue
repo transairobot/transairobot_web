@@ -398,7 +398,7 @@ export default {
     };
 
     const goBack = () => {
-      router.push('/my-robots');
+      router.push('/robots');
     };
 
     onMounted(() => {
