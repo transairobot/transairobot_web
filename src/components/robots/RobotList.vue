@@ -90,6 +90,7 @@
         @click="$emit('select', robot)"
         @view="$emit('view', robot)"
         @manage="$emit('manage', robot)"
+        @remove="$emit('remove', robot)"
       />
     </div>
 
@@ -160,7 +161,7 @@ export default {
       default: true
     }
   },
-  emits: ['retry', 'select', 'view', 'manage', 'robot-added'],
+  emits: ['retry', 'select', 'view', 'manage', 'robot-added', 'remove'],
   setup(props, { emit }) {
     const statusFilter = ref('all');
     const typeFilter = ref('all');

@@ -9,6 +9,7 @@ export class Robot {
     public id: string,
     public name: string,
     public model: string,
+    public robot_type: string,
     public owner_id: string,
     public connection_status: 'online' | 'offline' | 'maintenance',
     public last_seen: Date
@@ -62,21 +63,14 @@ class RobotManagementService {
     return robot;
   }
 
+  async removeRobot(robotId: string): Promise<Robot> {
+    const robot = await api.delete(`/robots/remove/${robotId}`);
+    return robot;
+  }
+
   async updateRobot(robotId: string, robotData: Partial<Robot>): Promise<Robot> {
     const result = await api.put(`/robots/update/${robotId}`, robotData);
     notificationService.success('Robot updated successfully');
-    return result;
-  }
-
-  async registerRobot(robotData: any): Promise<Robot> {
-    const result = await api.post('/robots/register', robotData);
-    notificationService.success('Robot registered successfully');
-    return result;
-  }
-
-  async deregisterRobot(robotId: string): Promise<any> {
-    const result = await api.delete(`/robots/${robotId}`);
-    notificationService.success('Robot deregistered successfully');
     return result;
   }
 

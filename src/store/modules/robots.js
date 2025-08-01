@@ -93,6 +93,12 @@ export default {
           );
         }
       }
+    },
+    REMOVE_ROBOT(state, robotId) {
+      state.robots = state.robots.filter(robot => robot.id !== robotId);
+      if (state.currentRobot && state.currentRobot.id === robotId) {
+        state.currentRobot = null;
+      }
     }
   },
   actions: {
@@ -179,6 +185,15 @@ export default {
         commit('REMOVE_APP_FROM_ROBOT', { robotId, appId });
       } catch (error) {
         console.error(`Failed to uninstall app: ${error}`);
+        throw error;
+      }
+    },
+    async deleteRobot({ commit }, robotId) {
+      try {
+        await robotManagementService.removeRobot(robotId);
+        commit('REMOVE_ROBOT', robotId);
+      } catch (error) {
+        console.error(`Failed to delete robot: ${error}`);
         throw error;
       }
     },

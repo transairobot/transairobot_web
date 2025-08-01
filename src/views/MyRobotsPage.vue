@@ -22,6 +22,7 @@
           @select="selectRobot"
           @view="viewRobot"
           @manage="manageRobot"
+          @remove="removeRobot"
           @robot-added="handleRobotAdded"
         />
 
@@ -154,6 +155,21 @@ export default {
       }
     };
 
+    const removeRobot = async robot => {
+      const confirmed = window.confirm(
+        `Are you sure you want to remove "${robot.name}"? This action cannot be undone.`
+      );
+      if (confirmed) {
+        try {
+          await store.dispatch('robots/deleteRobot', robot.id);
+          notificationService.success(`Robot "${robot.name}" has been removed.`);
+        } catch (error) {
+          notificationService.error('Failed to remove robot.');
+          console.error('Error removing robot:', error);
+        }
+      }
+    };
+
     const handleRobotAdded = newRobot => {
       notificationService.success(`Robot "${newRobot.name}" has been successfully added.`);
       fetchRobots();
@@ -178,7 +194,8 @@ export default {
       newRobotName,
       isUpdatingRobot,
       closeManageModal,
-      handleUpdateRobot
+      handleUpdateRobot,
+      removeRobot
     };
   }
 };
