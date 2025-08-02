@@ -12,7 +12,8 @@ export class Robot {
     public robot_type: string,
     public owner_id: string,
     public connection_status: 'online' | 'offline' | 'maintenance',
-    public last_seen: Date
+    public last_seen: Date,
+    public installed_apps: Application[] = []
   ) {}
   toString(): string {
     return `Robot(id=${this.id}, name=${this.name}, model=${this.model}, owner_id=${this.owner_id}, connection_status=${this.connection_status}, last_seen=${this.last_seen})`;

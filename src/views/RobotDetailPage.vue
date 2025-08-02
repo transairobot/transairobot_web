@@ -94,7 +94,7 @@
               <div class="detail-item">
                 <span class="detail-label">Applications:</span>
                 <span class="detail-value"
-                  >{{ robot.installedApps ? robot.installedApps.length : 0 }} installed</span
+                  >{{ robot.installed_apps ? robot.installed_apps.length : 0 }} installed</span
                 >
               </div>
             </div>
@@ -328,11 +328,11 @@ export default {
 
     // Filter apps based on search query
     const filteredApps = computed(() => {
-      if (!robot.value || !robot.value.installedApps) return [];
-      if (!searchQuery.value) return robot.value.installedApps;
+      if (!robot.value || !robot.value.installed_apps) return [];
+      if (!searchQuery.value) return robot.value.installed_apps;
 
       const query = searchQuery.value.toLowerCase();
-      return robot.value.installedApps.filter(
+      return robot.value.installed_apps.filter(
         app =>
           app.name.toLowerCase().includes(query) ||
           (app.description && app.description.toLowerCase().includes(query))
