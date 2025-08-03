@@ -8,7 +8,7 @@
     <div v-else class="app-grid">
       <div v-for="app in apps" :key="app.id" class="app-item">
         <div class="app-icon">
-          <img :src="app.icon" :alt="`${app.name} icon`" />
+          <img :src="app.iconUrl" :alt="`${app.name} icon`" />
         </div>
 
         <div class="app-info">
@@ -17,6 +17,43 @@
         </div>
 
         <div class="app-actions">
+          <button
+            class="action-btn run-btn"
+            @click="runApp(app.id)"
+            title="Run Application"
+            :disabled="runningApps.has(app.id)"
+          >
+            <svg
+              v-if="!runningApps.has(app.id)"
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="loading-spinner"
+            >
+              <path d="M21 12a9 9 0 11-6.219-8.56"></path>
+            </svg>
+          </button>
+
           <button
             class="action-btn view-btn"
             @click="$emit('view-details', app.id)"
@@ -92,12 +129,39 @@
         <button class="btn-danger" @click="uninstallConfirmed">Uninstall</button>
       </template>
     </AppModal>
+
+    <!-- Success Dialog -->
+    <AppModal v-model="showSuccessDialog" title="Task Submitted" size="small">
+      <div class="success-dialog">
+        <div class="success-icon">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <p>已提交运行任务给Robot</p>
+      </div>
+
+      <template #footer>
+        <button class="btn-primary" @click="showSuccessDialog = false">确定</button>
+      </template>
+    </AppModal>
   </div>
 </template>
 
 <script>
 import { ref } from 'vue';
 import AppModal from '../common/AppModal.vue';
+import robotManagementService from '../../services/robot-management.service';
 
 export default {
   name: 'RobotAppList',
@@ -108,12 +172,18 @@ export default {
     apps: {
       type: Array,
       default: () => []
+    },
+    robotId: {
+      type: String,
+      required: true
     }
   },
-  emits: ['uninstall', 'update', 'view-details', 'install-app'],
+  emits: ['uninstall', 'update', 'view-details', 'install-app', 'app-run', 'app-run-error'],
   setup(props, { emit }) {
     const showConfirmDialog = ref(false);
+    const showSuccessDialog = ref(false);
     const appToUninstall = ref(null);
+    const runningApps = ref(new Set());
 
     const confirmUninstall = app => {
       appToUninstall.value = app;
@@ -128,11 +198,32 @@ export default {
       }
     };
 
+    const runApp = async appId => {
+      if (runningApps.value.has(appId)) return;
+
+      runningApps.value.add(appId);
+
+      try {
+        await robotManagementService.runRobotApp(props.robotId, appId);
+        emit('app-run', appId);
+        showSuccessDialog.value = true;
+      } catch (error) {
+        console.error('Failed to run app:', error);
+        // You could emit an error event or show a notification here
+        emit('app-run-error', { appId, error });
+      } finally {
+        runningApps.value.delete(appId);
+      }
+    };
+
     return {
       showConfirmDialog,
+      showSuccessDialog,
       appToUninstall,
+      runningApps,
       confirmUninstall,
-      uninstallConfirmed
+      uninstallConfirmed,
+      runApp
     };
   }
 };
@@ -235,6 +326,24 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease;
 
+  &.run-btn {
+    background-color: var(--success-color, #22c55e);
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: var(--success-color-dark, #16a34a);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .loading-spinner {
+      animation: spin 1s linear infinite;
+    }
+  }
+
   &.view-btn {
     background-color: var(--bg-tertiary);
     color: var(--text-secondary);
@@ -276,7 +385,8 @@ export default {
 }
 
 .btn-secondary,
-.btn-danger {
+.btn-danger,
+.btn-primary {
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-weight: 500;
@@ -302,6 +412,46 @@ export default {
 
   &:hover {
     background-color: var(--error-color-dark, #dc2626);
+  }
+}
+
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+
+  &:hover {
+    background-color: var(--accent-primary-dark, #1a7fd1);
+  }
+}
+
+.success-dialog {
+  text-align: center;
+  padding: 1rem 0;
+
+  .success-icon {
+    color: var(--success-color, #22c55e);
+    margin-bottom: 1rem;
+
+    svg {
+      width: 48px;
+      height: 48px;
+    }
+  }
+
+  p {
+    font-size: 1rem;
+    color: var(--text-primary);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

@@ -225,10 +225,13 @@
 
           <RobotAppList
             :apps="filteredApps"
+            :robot-id="robotId"
             @uninstall="uninstallApp"
             @update="updateApp"
             @view-details="viewAppDetails"
             @install-app="showInstallModal = true"
+            @app-run="handleAppRun"
+            @app-run-error="handleAppRunError"
           />
         </div>
       </div>
@@ -397,6 +400,18 @@ export default {
       searchQuery.value = query;
     };
 
+    const handleAppRun = appId => {
+      console.log(`Successfully started app ${appId} on robot ${robotId}`);
+      // You could show a toast notification here
+      // notificationService.success(`Application started successfully`);
+    };
+
+    const handleAppRunError = ({ appId, error }) => {
+      console.error(`Failed to run app ${appId}:`, error);
+      // You could show an error notification here
+      // notificationService.error(`Failed to start application: ${error.message}`);
+    };
+
     const goBack = () => {
       router.push('/robots');
     };
@@ -418,6 +433,8 @@ export default {
       viewAppDetails,
       showInstallModal,
       handleInstallationComplete,
+      handleAppRun,
+      handleAppRunError,
       formatRobotType,
       formatRobotStatus,
       formatLastSeen,
