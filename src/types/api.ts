@@ -4,4 +4,4 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-export const SuccessCode = 20000;
+export const SuccessCode = 0;
