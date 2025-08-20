@@ -33,12 +33,12 @@ export default {
     }
   },
   actions: {
-    async fetchApps({ commit }) {
+    async fetchApps({ commit }, params = {}) {
       commit('SET_LOADING', true);
       commit('SET_ERROR', null);
 
       try {
-        const apps = await applicationStoreService.getApplications();
+        const apps = await applicationStoreService.getApplications(params);
         commit('SET_APPS', Array.isArray(apps) ? apps : []);
       } catch (error) {
         console.error('Failed to fetch apps:', error);

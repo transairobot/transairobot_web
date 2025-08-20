@@ -36,7 +36,7 @@ class TransformerService {
       return data;
     }
 
-    if (endpoint.includes('/applications/list')) {
+    if (endpoint.includes('/applications/list') || endpoint.includes('/applications/featured')) {
       let transformedData = data;
       if (transformedData && Array.isArray(transformedData)) {
         transformedData = transformedData.map((item: any) => this.transformApplicationItem(item));

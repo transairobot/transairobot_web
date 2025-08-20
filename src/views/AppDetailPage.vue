@@ -76,7 +76,7 @@
               v-for="tab in tabs"
               :key="tab.id"
               :class="['tab-button', { active: activeTab === tab.id }]"
-              @click="activeTab = tab.id"
+              @click="setActiveTab(tab.id)"
             >
               {{ tab.name }}
             </button>
@@ -88,8 +88,134 @@
             </div>
 
             <div v-else-if="activeTab === 'reviews'" class="app-detail-reviews">
-              <h2>Reviews</h2>
-              <p>User reviews coming soon...</p>
+              <div class="reviews-header">
+                <h2>Reviews</h2>
+                <div class="reviews-summary" v-if="app.rating">
+                  <div class="rating-overview">
+                    <div class="rating-score">{{ app.rating.toFixed(1) }}</div>
+                    <div class="rating-stars">
+                      <span
+                        v-for="i in 5"
+                        :key="i"
+                        class="star"
+                        :class="{ 'star--filled': i <= Math.round(app.rating) }"
+                      >
+                        ★
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 评价提交表单 -->
+              <div class="review-form" v-if="isAuthenticated">
+                <h3>Write a Review</h3>
+                <form @submit.prevent="submitReview">
+                  <div class="form-group">
+                    <label>Rating</label>
+                    <div class="rating-input">
+                      <button
+                        v-for="i in 5"
+                        :key="i"
+                        type="button"
+                        class="rating-star"
+                        :class="{ active: i <= newReview.rating }"
+                        @click="newReview.rating = i"
+                      >
+                        ★
+                      </button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="review-comment">Comment</label>
+                    <textarea
+                      id="review-comment"
+                      v-model="newReview.comment"
+                      placeholder="Share your experience with this application..."
+                      rows="4"
+                      class="form-control"
+                    ></textarea>
+                  </div>
+                  <div class="form-actions">
+                    <button
+                      type="submit"
+                      class="submit-button"
+                      :disabled="!newReview.rating || !newReview.comment.trim() || submittingReview"
+                    >
+                      {{ submittingReview ? 'Submitting...' : 'Submit Review' }}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div v-else class="login-prompt">
+                <p>Please <router-link to="/login">login</router-link> to write a review.</p>
+              </div>
+
+              <!-- 无限滚动评价列表 -->
+              <div class="reviews-list">
+                <InfiniteScrollList
+                  :items="reviews"
+                  :loading="reviewsLoading"
+                  :has-more="reviewsHasMore"
+                  :error="reviewsError"
+                  :is-empty="reviewsIsEmpty"
+                  :is-initial-loading="reviewsIsInitialLoading"
+                  loading-text="Loading reviews..."
+                  empty-title="No Reviews"
+                  empty-description="No reviews for this application yet"
+                  no-more-text="已加载全部评价"
+                  @refresh="refreshReviews"
+                  @load-more="loadMoreReviews"
+                  ref="reviewsScrollRef"
+                >
+                  <template #items="{ items }">
+                    <div class="reviews-container">
+                      <div v-for="review in items" :key="review.id" class="review-item">
+                        <div class="review-header">
+                          <div class="review-user">
+                            <div class="user-avatar">
+                              {{ review.userId.charAt(0).toUpperCase() }}
+                            </div>
+                            <div class="user-info">
+                              <div class="user-name">User {{ review.userId.slice(-4) }}</div>
+                              <div class="review-date">{{ formatDate(review.createdAt) }}</div>
+                            </div>
+                          </div>
+                          <div class="review-rating">
+                            <span
+                              v-for="i in 5"
+                              :key="i"
+                              class="star"
+                              :class="{ 'star--filled': i <= review.rating }"
+                            >
+                              ★
+                            </span>
+                          </div>
+                        </div>
+                        <div class="review-content">
+                          <p>{{ review.comment }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <template #empty-icon>
+                    <svg
+                      width="64"
+                      height="64"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    >
+                      <path d="M14 9V5a3 3 0 0 0-6 0v4" />
+                      <rect x="2" y="9" width="20" height="11" rx="2" ry="2" />
+                      <circle cx="12" cy="15" r="1" />
+                    </svg>
+                  </template>
+                </InfiniteScrollList>
+              </div>
             </div>
 
             <div v-else-if="activeTab === 'related'" class="app-detail-related">
@@ -111,106 +237,156 @@
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted } from 'vue';
+<script setup lang="ts">
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import AppHeader from '../components/common/AppHeader.vue';
 import AppFooter from '../components/common/AppFooter.vue';
 import LoadingState from '../components/common/LoadingState.vue';
 import ErrorState from '../components/common/ErrorState.vue';
-import { renderMarkdown } from '../utils/markdown';
+import InfiniteScrollList from '../components/InfiniteScrollList.vue';
 import InstallationModal from '../components/robots/InstallationModal.vue';
+import { useInfiniteScroll } from '../composables/useInfiniteScroll';
+import applicationStoreService from '../services/application-store.service';
+import authService from '../services/auth.service';
+import notificationService from '../services/notification.service';
+import { renderMarkdown } from '../utils/markdown';
+import type { Application, Review } from '../services/application-store.service';
 
-export default {
-  name: 'AppDetailPage',
-  components: {
-    AppHeader,
-    AppFooter,
-    LoadingState,
-    ErrorState,
-    InstallationModal
-  },
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-    const store = useStore();
+const route = useRoute();
+const router = useRouter();
+const store = useStore();
 
-    const appId = computed(() => route.params.id);
-    const loading = computed(() => store.getters['apps/isLoading']);
-    const app = computed(() => store.getters['apps/currentApp']);
-    const error = computed(() => store.state.apps.error);
+// 应用基本信息
+const appId = computed(() => route.params.id as string);
+const loading = computed(() => store.getters['apps/isLoading']);
+const app = computed(() => store.getters['apps/currentApp'] as Application | null);
+const error = computed(() => store.state.apps.error);
 
-    const activeTab = ref('description');
-    const tabs = [
-      { id: 'description', name: 'Description' },
-      { id: 'reviews', name: 'Reviews' },
-      { id: 'related', name: 'Related Apps' }
-    ];
+// 标签页状态
+const activeTab = ref('description');
+const tabs = [
+  { id: 'description', name: 'Description' },
+  { id: 'reviews', name: 'Reviews' },
+  { id: 'related', name: 'Related Apps' }
+];
 
-    const renderedDescription = computed(() => {
-      if (!app.value || !app.value.description) return '';
-      return renderMarkdown(app.value.description);
-    });
+// 认证状态
+const isAuthenticated = computed(() => authService.isAuthenticated());
 
-    const fetchAppDetails = async () => {
-      try {
-        await store.dispatch('apps/fetchAppDetails', appId.value);
-      } catch (err) {
-        console.error('Failed to fetch app details:', err);
-        // Error is handled in the store
-      }
-    };
+// 评价表单状态
+const newReview = ref({
+  rating: 0,
+  comment: ''
+});
+const submittingReview = ref(false);
 
-    const goBack = () => {
-      router.push('/app-store');
-    };
+// 无限滚动评价引用
+const reviewsScrollRef = ref();
 
-    const showInstallModal = ref(false);
+// 使用无限滚动组合式函数获取评价
+const {
+  items: reviews,
+  loading: reviewsLoading,
+  hasMore: reviewsHasMore,
+  error: reviewsError,
+  isEmpty: reviewsIsEmpty,
+  isInitialLoading: reviewsIsInitialLoading,
+  refresh: refreshReviews,
+  loadMore: loadMoreReviews,
+  setSentinel: setReviewsSentinel
+} = useInfiniteScroll<Review>(
+  params => applicationStoreService.getApplicationReviewsInfinite(appId.value, params),
+  { immediate: false } // 不立即加载，等切换到评价标签时再加载
+);
 
-    const installApp = () => {
-      showInstallModal.value = true;
-    };
+// 渲染的描述内容
+const renderedDescription = computed(() => {
+  if (!app.value || !app.value.description) return '';
+  return renderMarkdown(app.value.description);
+});
 
-    const handleInstallationComplete = result => {
-      if (result.success) {
-        // You could show a toast notification here
-        console.log(`Successfully installed ${app.value.name} on robot ${result.robotId}`);
-      } else {
-        console.error('Installation failed:', result.error);
-      }
-    };
-
-    const shareApp = () => {
-      // This would typically open a share dialog
-      // For now, just copy the URL to clipboard
-      const url = window.location.href;
-      navigator.clipboard
-        .writeText(url)
-        .then(() => alert('Link copied to clipboard!'))
-        .catch(err => console.error('Failed to copy link:', err));
-    };
-
-    onMounted(() => {
-      fetchAppDetails();
-    });
-
-    return {
-      app,
-      loading,
-      error,
-      activeTab,
-      tabs,
-      renderedDescription,
-      fetchAppDetails,
-      goBack,
-      installApp,
-      shareApp,
-      showInstallModal,
-      handleInstallationComplete
-    };
+// 获取应用详情
+const fetchAppDetails = async () => {
+  try {
+    await store.dispatch('apps/fetchAppDetails', appId.value);
+  } catch (err) {
+    console.error('Failed to fetch app details:', err);
   }
 };
+
+// 提交评价
+const submitReview = async () => {
+  if (!newReview.value.rating || !newReview.value.comment.trim()) {
+    notificationService.error('请填写评分和评价内容');
+    return;
+  }
+
+  submittingReview.value = true;
+  try {
+    await applicationStoreService.submitReview(appId.value, {
+      rating: newReview.value.rating,
+      comment: newReview.value.comment.trim()
+    });
+
+    notificationService.success('评价提交成功');
+
+    // 重置表单
+    newReview.value = {
+      rating: 0,
+      comment: ''
+    };
+
+    // 刷新评价列表
+    await refreshReviews();
+  } catch (error) {
+    console.error('Failed to submit review:', error);
+    notificationService.error('评价提交失败');
+  } finally {
+    submittingReview.value = false;
+  }
+};
+
+// 格式化日期
+const formatDate = (date: Date): string => {
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
+
+// 返回上一页
+const goBack = () => {
+  router.push('/store');
+};
+
+// 切换标签页
+const setActiveTab = (tabId: string) => {
+  activeTab.value = tabId;
+
+  // 如果切换到评价标签且还没有加载过评价，则开始加载
+  if (tabId === 'reviews' && reviews.value.length === 0 && !reviewsLoading.value) {
+    refreshReviews();
+  }
+};
+
+// 监听评价滚动引用变化
+watch(reviewsScrollRef, newRef => {
+  if (newRef?.sentinelElement) {
+    nextTick(() => {
+      setReviewsSentinel(newRef.sentinelElement);
+    });
+  }
+});
+
+// 组件挂载时获取应用详情
+onMounted(() => {
+  fetchAppDetails();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -505,6 +681,232 @@ export default {
       code {
         background: none;
         padding: 0;
+      }
+    }
+  }
+
+  .app-detail-reviews {
+    .reviews-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+
+      h2 {
+        margin: 0;
+        color: var(--color-text-primary);
+      }
+
+      .reviews-summary {
+        .rating-overview {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          .rating-score {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-primary);
+          }
+
+          .rating-stars {
+            .star {
+              color: #ffd700;
+              font-size: 1.25rem;
+
+              &:not(.star--filled) {
+                color: var(--color-border);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .review-form {
+      background: var(--color-background-secondary);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+
+      h3 {
+        margin: 0 0 1rem 0;
+        color: var(--color-text-primary);
+        font-size: 1.125rem;
+      }
+
+      .form-group {
+        margin-bottom: 1rem;
+
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+          color: var(--color-text-primary);
+        }
+
+        .rating-input {
+          display: flex;
+          gap: 0.25rem;
+
+          .rating-star {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--color-border);
+            cursor: pointer;
+            transition: color 0.2s;
+
+            &:hover,
+            &.active {
+              color: #ffd700;
+            }
+          }
+        }
+
+        .form-control {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid var(--color-border);
+          border-radius: 8px;
+          background: var(--color-background);
+          color: var(--color-text-primary);
+          font-family: inherit;
+          font-size: 0.875rem;
+          resize: vertical;
+          min-height: 100px;
+
+          &:focus {
+            outline: none;
+            border-color: var(--color-primary);
+          }
+
+          &::placeholder {
+            color: var(--color-text-tertiary);
+          }
+        }
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+
+        .submit-button {
+          background: var(--color-primary);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s;
+
+          &:hover:not(:disabled) {
+            background: var(--color-primary-dark);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+
+    .login-prompt {
+      background: var(--color-background-secondary);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+
+      p {
+        margin: 0;
+        color: var(--color-text-secondary);
+
+        a {
+          color: var(--color-primary);
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    .reviews-list {
+      .reviews-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+
+        .review-item {
+          background: var(--color-background-secondary);
+          border-radius: 12px;
+          padding: 1.5rem;
+          border: 1px solid var(--color-border);
+
+          .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+
+            .review-user {
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+
+              .user-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: var(--color-primary);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                font-size: 0.875rem;
+              }
+
+              .user-info {
+                .user-name {
+                  font-weight: 500;
+                  color: var(--color-text-primary);
+                  margin-bottom: 0.25rem;
+                }
+
+                .review-date {
+                  font-size: 0.75rem;
+                  color: var(--color-text-tertiary);
+                }
+              }
+            }
+
+            .review-rating {
+              .star {
+                color: #ffd700;
+                font-size: 1rem;
+
+                &:not(.star--filled) {
+                  color: var(--color-border);
+                }
+              }
+            }
+          }
+
+          .review-content {
+            p {
+              margin: 0;
+              color: var(--color-text-secondary);
+              line-height: 1.6;
+            }
+          }
+        }
       }
     }
   }

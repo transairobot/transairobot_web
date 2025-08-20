@@ -3,7 +3,21 @@
     <!-- Rest of the template remains the same -->
     <AppSection title="Featured Applications" spacing="normal" centered>
       <div class="featured-apps">
+        <!-- Loading state -->
+        <div v-if="loading" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading featured applications...</p>
+        </div>
+
+        <!-- Error state -->
+        <div v-else-if="error" class="error-state">
+          <p>{{ error }}</p>
+          <button @click="fetchFeaturedApps" class="retry-button">Retry</button>
+        </div>
+
+        <!-- Featured apps carousel -->
         <AppCarousel
+          v-else-if="featuredAppGroups.length > 0"
           :slides="featuredAppGroups"
           :autoplay="true"
           :autoplaySpeed="5000"
@@ -13,7 +27,14 @@
             <AppGrid columns="3" gap="normal">
               <AppGridItem v-for="(app, appIndex) in item" :key="appIndex">
                 <div class="app-card">
-                  <div class="app-icon">{{ app.icon }}</div>
+                  <div class="app-icon">
+                    <img
+                      v-if="app.icon && app.icon.startsWith('http')"
+                      :src="app.icon"
+                      :alt="app.title"
+                    />
+                    <span v-else>{{ app.icon }}</span>
+                  </div>
                   <div class="app-badge" v-if="app.badge">{{ app.badge }}</div>
                   <h3>{{ app.title }}</h3>
                   <p>{{ app.description }}</p>
@@ -22,6 +43,11 @@
             </AppGrid>
           </template>
         </AppCarousel>
+
+        <!-- Empty state -->
+        <div v-else class="empty-state">
+          <p>No featured applications available at the moment.</p>
+        </div>
       </div>
     </AppSection>
     <AppSection title="Robot Operating System" spacing="normal">
@@ -136,6 +162,7 @@ import AppSection from '../components/common/AppSection.vue';
 import AppGrid from '../components/common/AppGrid.vue';
 import AppGridItem from '../components/common/AppGridItem.vue';
 import AppCarousel from '../components/common/AppCarousel.vue';
+import applicationStoreService from '../services/application-store.service';
 
 export default {
   name: 'HomePage',
@@ -149,65 +176,9 @@ export default {
   data() {
     return {
       activeCodeExample: 'ts',
-      featuredApps: [
-        {
-          icon: '🤖',
-          title: 'Robot Navigation',
-          description: 'Advanced navigation system for robots',
-          rating: '4.8',
-          badge: 'Popular'
-        },
-        {
-          icon: '👁️',
-          title: 'Vision System',
-          description: 'Computer vision for robot perception',
-          rating: '4.6'
-        },
-        {
-          icon: '🦾',
-          title: 'Arm Control',
-          description: 'Precise control for robotic arms',
-          rating: '4.7'
-        },
-        {
-          icon: '🔍',
-          title: 'Object Recognition',
-          description: 'Identify objects in real-time',
-          rating: '4.5'
-        },
-        {
-          icon: '🗣️',
-          title: 'Voice Commands',
-          description: 'Natural language processing for robots',
-          rating: '4.4',
-          badge: 'New'
-        },
-        {
-          icon: '🔋',
-          title: 'Power Management',
-          description: 'Optimize battery usage',
-          rating: '4.9'
-        },
-        {
-          icon: '🔄',
-          title: 'Auto-Update',
-          description: 'Keep your robot software up to date',
-          rating: '4.3'
-        },
-        {
-          icon: '🛡️',
-          title: 'Security Shield',
-          description: 'Protect your robot from unauth access',
-          rating: '4.8',
-          badge: 'Featured'
-        },
-        {
-          icon: '📊',
-          title: 'Analytics Dashboard',
-          description: 'Monitor robot performance metrics',
-          rating: '4.7'
-        }
-      ],
+      featuredApps: [],
+      loading: false,
+      error: null,
       osFeatures: [
         {
           title: 'TypeScript & Rust Support',
@@ -236,6 +207,67 @@ export default {
 
       return groups;
     }
+  },
+  async mounted() {
+    await this.fetchFeaturedApps();
+  },
+  methods: {
+    async fetchFeaturedApps() {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const response = await applicationStoreService.getFeaturedApplications();
+        console.log('Featured apps response:', response);
+
+        // Handle different response formats
+        let apps = response;
+
+        // If response is an object with numeric keys (transformed array), convert back to array
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+          const keys = Object.keys(response);
+          if (keys.length > 0 && keys.every(key => !isNaN(Number(key)))) {
+            apps = Object.values(response);
+          }
+        }
+
+        // Ensure apps is an array
+        if (!Array.isArray(apps)) {
+          apps = [];
+        }
+
+        // Transform API data to match the expected format for the carousel
+        this.featuredApps = apps.map(app => ({
+          icon: app.iconUrl || '🤖', // Use iconUrl from API or fallback to default icon
+          title: app.name,
+          description: app.description,
+          rating: app.rating ? app.rating.toFixed(1) : '0.0',
+          badge: this.getAppBadge(app), // Determine badge based on app properties
+          id: app.id // Keep the ID for potential navigation
+        }));
+
+        // If no apps are returned, don't show error - just show empty state
+        if (this.featuredApps.length === 0) {
+          console.log('No featured applications found');
+        }
+      } catch (error) {
+        console.error('Failed to fetch featured applications:', error);
+        this.error = 'Failed to load featured applications';
+        // Keep featuredApps as empty array to avoid breaking the UI
+        this.featuredApps = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    getAppBadge(app) {
+      // Logic to determine badge based on app properties
+      // This can be customized based on your backend data structure
+      if (app.featured) return 'Featured';
+      if (app.isNew) return 'New';
+      if (app.popular) return 'Popular';
+      return null;
+    }
   }
 };
 </script>
@@ -260,7 +292,7 @@ export default {
   background-color: var(--card-bg);
   margin-top: 1rem;
   margin-bottom: 1rem;
-  padding: 1.5rem;
+  padding: 2rem 1.5rem; // 增加上下padding
   border-radius: 0.75rem;
   text-align: center;
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
@@ -268,6 +300,9 @@ export default {
   overflow: visible;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px; // 设置最小高度，让卡片更饱满
   height: 90%; /* Ensure card takes full height of grid item */
 
   &::before {
@@ -296,8 +331,11 @@ export default {
   }
 
   .app-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
+    font-size: 3.5rem; // 从 2.5rem 增加到 3.5rem
+    margin-bottom: 1.2rem; // 稍微增加底部间距
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .app-badge {
@@ -314,13 +352,17 @@ export default {
 
   h3 {
     margin: 0.5rem 0;
-    font-size: 1.25rem;
+    font-size: 1.5rem; // 从 1.25rem 增加到 1.5rem
+    font-weight: 600; // 增加字体粗细
     color: var(--text-primary);
+    text-align: center; // 居中对齐
   }
 
   p {
     color: var(--text-secondary);
     font-size: 0.9rem;
+    line-height: 1.4; // 增加行高让文字更易读
+    margin-top: 0.75rem; // 增加与标题的间距
     flex-grow: 1; /* Allow description to take up available space */
   }
 }
@@ -399,5 +441,67 @@ export default {
 
 .os-cta {
   margin-top: 2.5rem;
+}
+
+// Loading, error, and empty states for featured apps
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.loading-state {
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--bg-tertiary);
+    border-top: 3px solid var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+}
+
+.error-state {
+  .retry-button {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background: var(--accent-primary);
+    color: var(--button-text);
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: var(--accent-primary-hover);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.app-icon {
+  img {
+    width: 3.5rem; // 从 2.5rem 增加到 3.5rem
+    height: 3.5rem; // 从 2.5rem 增加到 3.5rem
+    object-fit: cover;
+    border-radius: 0.75rem; // 稍微增加圆角
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
