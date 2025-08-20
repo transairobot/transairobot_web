@@ -30,30 +30,6 @@
           </div>
           <h3 class="empty-title">{{ emptyTitle }}</h3>
           <p class="empty-description">{{ emptyDescription }}</p>
-          <button v-if="showRetryButton" @click="refresh" class="retry-button">Retry</button>
-        </div>
-      </div>
-
-      <!-- 错误状态 -->
-      <div v-else-if="error" class="error-container">
-        <div class="error-content">
-          <div class="error-icon">
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
-          </div>
-          <h3 class="error-title">Loading Failed</h3>
-          <p class="error-message">{{ error }}</p>
-          <button @click="refresh" class="retry-button">Retry</button>
         </div>
       </div>
 
@@ -117,10 +93,6 @@ export default defineComponent({
       type: Boolean,
       required: true
     },
-    error: {
-      type: String as PropType<string | null>,
-      default: null
-    },
     isEmpty: {
       type: Boolean,
       required: true
@@ -144,10 +116,6 @@ export default defineComponent({
     noMoreText: {
       type: String,
       default: 'No more data'
-    },
-    showRetryButton: {
-      type: Boolean,
-      default: true
     },
     showPullToRefresh: {
       type: Boolean,

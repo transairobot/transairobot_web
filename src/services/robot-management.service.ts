@@ -34,7 +34,10 @@ class RobotManagementService {
     };
 
     try {
-      const response = await api.get('/robots/list', { params: queryParams });
+      const response = await api.get('/robots/list', {
+        params: queryParams,
+        showErrorNotification: false
+      });
 
       // 转换日期字段
       if (response.data) {

@@ -55,7 +55,8 @@ export function useInfiniteScroll<T>(
       nextCursor.value = response.nextCursor;
     } catch (err) {
       console.error('Failed to load data:', err);
-      error.value = err instanceof Error ? err.message : '加载数据失败';
+      // 静默处理错误，不设置任何错误状态
+      // 让组件显示空状态或保持当前数据
     } finally {
       loading.value = false;
     }

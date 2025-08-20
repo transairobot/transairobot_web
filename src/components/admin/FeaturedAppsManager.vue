@@ -18,10 +18,6 @@
       <div v-if="loading" class="loading-state">
         <p>Loading applications...</p>
       </div>
-      <div v-else-if="error" class="error-state">
-        <p>{{ error }}</p>
-        <button @click="fetchApps">Retry</button>
-      </div>
 
       <div v-else-if="filteredApps.length === 0" class="empty-state">
         <p>No applications found</p>
@@ -54,7 +50,7 @@
 </template>
 
 <script>
-import { applicationStoreService, adminService } from '@/services';
+import { adminService } from '@/services';
 
 export default {
   name: 'FeaturedAppsManager',
@@ -66,14 +62,12 @@ export default {
       filteredApps: [],
       categories: [],
       loading: false,
-      error: null,
       searchTimeout: null // 添加防抖定时器
     };
   },
   methods: {
     async fetchApps() {
       this.loading = true;
-      this.error = null;
 
       try {
         const result = await adminService.getFeaturedApplicationsForAdmin({
@@ -96,7 +90,7 @@ export default {
         else if (result && typeof result === 'object') {
           // 检查是否是 {0: {...}, 1: {...}} 这种格式
           const keys = Object.keys(result);
-          const isIndexedObject = keys.every(key => /^\d+$/.test(key));
+          const isIndexedObject = keys.length > 0 && keys.every(key => /^\d+$/.test(key));
 
           if (isIndexedObject) {
             appsData = Object.values(result);
@@ -109,13 +103,13 @@ export default {
 
         this.apps = appsData.map(app => ({
           ...app,
-          featured: app.isFeatured // 将 isFeatured 映射为 featured
+          featured: app.isFeatured || app.featured // 将 isFeatured 映射为 featured
         }));
 
         this.filteredApps = [...this.apps];
       } catch (error) {
-        console.error('Error fetching apps:', error);
-        this.error = 'Failed to load applications';
+        // 静默处理错误，不显示任何通知或错误状态
+        console.error('Error fetching featured apps:', error);
         this.apps = [];
         this.filteredApps = [];
       } finally {
@@ -224,7 +218,7 @@ export default {
       button {
         margin-top: 1rem;
         padding: 0.5rem 1rem;
-        background: #007bff;
+        background: var(--accent-primary);
         color: white;
         border: none;
         border-radius: 4px;
@@ -248,14 +242,14 @@ export default {
         position: relative;
 
         &.featured {
-          border: 2px solid #28a745;
+          border: 2px solid var(--success, #28a745);
 
           &::before {
             content: 'Featured';
             position: absolute;
             top: 10px;
             right: 10px;
-            background-color: #28a745;
+            background-color: var(--success, #28a745);
             color: white;
             padding: 2px 8px;
             border-radius: 4px;
@@ -311,16 +305,16 @@ export default {
             transition: all 0.2s ease;
 
             &:hover {
-              background-color: #f8f9fa;
+              background-color: var(--surface-secondary);
             }
 
             &.featured-btn {
-              background-color: #28a745;
+              background-color: var(--success, #28a745);
               color: white;
               border: none;
 
               &:hover {
-                background-color: #218838;
+                background-color: var(--success-dark, #218838);
               }
             }
           }

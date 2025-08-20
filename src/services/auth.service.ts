@@ -16,6 +16,42 @@ export class RegisterReq {
  */
 class AuthService {
   /**
+   * Check if user is authenticated
+   * @returns boolean indicating authentication status
+   */
+  isAuthenticated(): boolean {
+    // 检查 localStorage 中是否有 token
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    return !!token;
+  }
+
+  /**
+   * Get current user token
+   * @returns string token or null
+   */
+  getToken(): string | null {
+    return localStorage.getItem('token') || localStorage.getItem('authToken');
+  }
+
+  /**
+   * Set authentication token
+   * @param token - Authentication token
+   */
+  setToken(token: string): void {
+    localStorage.setItem('token', token);
+  }
+
+  /**
+   * Remove authentication token (logout)
+   */
+  logout(): void {
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    notificationService.success('Logged out successfully');
+  }
+
+  /**
    * Login user
    * @param email - User email
    * @param password - User password
@@ -23,7 +59,7 @@ class AuthService {
    */
   async login(email: string, password: string): Promise<{ user: User }> {
     try {
-      const user = await api.post(
+      const response = await api.post(
         '/auth/login',
         { email, password },
         {
@@ -32,8 +68,18 @@ class AuthService {
         }
       );
 
+      // 如果响应包含 token，保存它
+      if (response.token) {
+        this.setToken(response.token);
+      }
+
+      // 如果响应包含用户信息，保存它
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+
       return {
-        user
+        user: response.user || response
       };
     } catch (error: any) {
       // Handle specific login errors

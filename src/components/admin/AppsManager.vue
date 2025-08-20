@@ -24,10 +24,6 @@
       <div v-if="loading" class="loading-state">
         <p>Loading applications...</p>
       </div>
-      <div v-else-if="error" class="error-state">
-        <p>{{ error }}</p>
-        <button @click="fetchApps">Retry</button>
-      </div>
 
       <div v-else-if="filteredApps.length === 0" class="empty-state">
         <p>No applications found</p>
@@ -188,7 +184,7 @@
 </template>
 
 <script>
-import { adminService, applicationStoreService } from '@/services';
+import { adminService } from '@/services';
 import FileUpload from '../common/FileUpload.vue';
 
 export default {
@@ -227,20 +223,43 @@ export default {
       this.error = null;
 
       try {
-        const result = await applicationStoreService.getApplications();
-        // 检查API返回格式，如果是 {code, message, data} 格式则取data，否则直接使用result
+        const result = await adminService.getApplicationsForAdmin();
+
+        // 处理不同的API响应格式
+        let appsData = [];
+
+        // 标准格式: {code: 0, message: "", data: [...]}
         if (result && result.data && Array.isArray(result.data)) {
-          this.apps = result.data;
-        } else if (Array.isArray(result)) {
-          this.apps = result;
-        } else {
-          this.apps = [];
+          appsData = result.data;
         }
+        // 直接数组格式: [...]
+        else if (Array.isArray(result)) {
+          appsData = result;
+        }
+        // 嵌套格式: {applications: [...]} 或 {items: [...]}
+        else if (result && result.applications && Array.isArray(result.applications)) {
+          appsData = result.applications;
+        } else if (result && result.items && Array.isArray(result.items)) {
+          appsData = result.items;
+        }
+        // 索引对象格式: {0: {...}, 1: {...}} (API转换后的格式)
+        else if (result && typeof result === 'object' && !Array.isArray(result)) {
+          const keys = Object.keys(result);
+          // 检查是否所有键都是数字索引
+          const isIndexedObject = keys.length > 0 && keys.every(key => /^\d+$/.test(key));
+
+          if (isIndexedObject) {
+            appsData = Object.values(result);
+          } else {
+            appsData = [];
+          }
+        }
+
+        this.apps = appsData;
         this.filteredApps = [...this.apps];
-        // 不设置error，让模板显示"No applications found"而不是错误信息
       } catch (error) {
+        // 静默处理错误，不显示任何通知或错误状态
         console.error('Error fetching apps:', error);
-        this.error = 'Failed to load applications';
         this.apps = [];
         this.filteredApps = [];
       } finally {
@@ -511,7 +530,7 @@ export default {
     }
 
     .apps-table {
-      background: white;
+      background: var(--card-bg);
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -524,13 +543,14 @@ export default {
         td {
           padding: 1rem;
           text-align: left;
-          border-bottom: 1px solid #eee;
+          border-bottom: 1px solid var(--border-color);
+          color: var(--text-primary);
         }
 
         th {
           font-weight: 600;
           color: var(--text-secondary);
-          background-color: #f8f9fa;
+          background-color: var(--surface-secondary);
         }
 
         .app-icon {
@@ -548,13 +568,13 @@ export default {
           text-transform: capitalize;
 
           &.active {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: var(--success-bg, #d4edda);
+            color: var(--success-text, #155724);
           }
 
           &.inactive {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: var(--error-bg, #f8d7da);
+            color: var(--error-text, #721c24);
           }
         }
 
@@ -573,7 +593,7 @@ export default {
             cursor: pointer;
 
             &.edit-btn {
-              background-color: #f8f9fa;
+              background-color: var(--surface-secondary);
               color: var(--text-primary);
 
               &:hover {
@@ -583,11 +603,11 @@ export default {
             }
 
             &.delete-btn {
-              background-color: #f8f9fa;
-              color: #dc3545;
+              background-color: var(--surface-secondary);
+              color: var(--error-color, #dc3545);
 
               &:hover {
-                background-color: #dc3545;
+                background-color: var(--error-color, #dc3545);
                 color: white;
               }
             }
@@ -621,7 +641,7 @@ export default {
 
       .modal-header {
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border-color);
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -664,6 +684,8 @@ export default {
         border: 1px solid var(--border-color);
         border-radius: 4px;
         font-size: 0.9rem;
+        background-color: var(--card-bg);
+        color: var(--text-primary);
 
         &:focus {
           outline: none;
@@ -690,12 +712,12 @@ export default {
         font-weight: 500;
 
         &.cancel-btn {
-          background-color: #6c757d;
-          color: white;
-          border: none;
+          background-color: var(--surface-secondary);
+          color: var(--text-primary);
+          border: 1px solid var(--border-color);
 
           &:hover {
-            background-color: #545b62;
+            background-color: var(--surface-tertiary);
           }
         }
 
@@ -715,19 +737,19 @@ export default {
         }
 
         &.delete-btn {
-          background-color: #dc3545;
+          background-color: var(--error-color, #dc3545);
           color: white;
           border: none;
 
           &:hover {
-            background-color: #c82333;
+            background-color: var(--error-color-dark, #c82333);
           }
         }
       }
     }
 
     .warning {
-      color: #dc3545;
+      color: var(--error-color, #dc3545);
       font-weight: 500;
     }
 

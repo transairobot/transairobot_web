@@ -41,7 +41,6 @@
           :items="applications"
           :loading="loading"
           :has-more="hasMore"
-          :error="error"
           :is-empty="isEmpty"
           :is-initial-loading="isInitialLoading"
           loading-text="Loading applications..."

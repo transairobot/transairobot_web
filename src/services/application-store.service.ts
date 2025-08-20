@@ -225,7 +225,7 @@ class ApplicationStoreService {
       }));
     } catch (error) {
       console.error('Failed to fetch featured applications:', error);
-      notificationService.error('获取特色应用失败');
+      // 静默处理错误，不显示通知
       throw error;
     }
   }

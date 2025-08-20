@@ -9,15 +9,9 @@
           <p>Loading featured applications...</p>
         </div>
 
-        <!-- Error state -->
-        <div v-else-if="error" class="error-state">
-          <p>{{ error }}</p>
-          <button @click="fetchFeaturedApps" class="retry-button">Retry</button>
-        </div>
-
         <!-- Featured apps carousel -->
         <AppCarousel
-          v-else-if="featuredAppGroups.length > 0"
+          v-if="featuredAppGroups.length > 0"
           :slides="featuredAppGroups"
           :autoplay="true"
           :autoplaySpeed="5000"
@@ -252,7 +246,7 @@ export default {
         }
       } catch (error) {
         console.error('Failed to fetch featured applications:', error);
-        this.error = 'Failed to load featured applications';
+        // 静默处理错误，不设置错误状态
         // Keep featuredApps as empty array to avoid breaking the UI
         this.featuredApps = [];
       } finally {

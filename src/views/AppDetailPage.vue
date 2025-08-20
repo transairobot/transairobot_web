@@ -164,7 +164,7 @@
                   loading-text="Loading reviews..."
                   empty-title="No Reviews"
                   empty-description="No reviews for this application yet"
-                  no-more-text="已加载全部评价"
+                  :show-no-more="false"
                   @refresh="refreshReviews"
                   @load-more="loadMoreReviews"
                   ref="reviewsScrollRef"
@@ -273,7 +273,10 @@ const tabs = [
 ];
 
 // 认证状态
-const isAuthenticated = computed(() => authService.isAuthenticated());
+const isAuthenticated = computed(() => store.getters['auth/isAuthenticated']);
+
+// 安装模态框状态
+const showInstallModal = ref(false);
 
 // 评价表单状态
 const newReview = ref({
@@ -361,7 +364,37 @@ const formatDate = (date: Date): string => {
 
 // 返回上一页
 const goBack = () => {
-  router.push('/store');
+  router.push('/app-store');
+};
+
+// 分享应用
+const shareApp = () => {
+  // 复制当前页面 URL 到剪贴板
+  const url = window.location.href;
+  navigator.clipboard
+    .writeText(url)
+    .then(() => {
+      notificationService.success('链接已复制到剪贴板！');
+    })
+    .catch(err => {
+      console.error('Failed to copy link:', err);
+      notificationService.error('复制链接失败');
+    });
+};
+
+// 安装应用
+const installApp = () => {
+  showInstallModal.value = true;
+};
+
+// 处理安装完成
+const handleInstallationComplete = (result: any) => {
+  if (result.success) {
+    notificationService.success(`成功在机器人 ${result.robotId} 上安装了 ${app.value?.name}`);
+  } else {
+    console.error('Installation failed:', result.error);
+    notificationService.error('安装失败');
+  }
 };
 
 // 切换标签页
@@ -726,40 +759,52 @@ onMounted(() => {
     }
 
     .review-form {
-      background: var(--color-background-secondary);
+      background: var(--card-bg);
+      border: 1px solid var(--divider);
       border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 2rem;
+      box-shadow: var(--shadow);
 
       h3 {
-        margin: 0 0 1rem 0;
-        color: var(--color-text-primary);
-        font-size: 1.125rem;
+        margin: 0 0 1.5rem 0;
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        font-weight: 600;
       }
 
       .form-group {
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
 
         label {
           display: block;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.75rem;
           font-weight: 500;
-          color: var(--color-text-primary);
+          color: var(--text-primary);
+          font-size: 0.875rem;
         }
 
         .rating-input {
           display: flex;
-          gap: 0.25rem;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
 
           .rating-star {
             background: none;
             border: none;
-            font-size: 1.5rem;
-            color: var(--color-border);
+            font-size: 1.75rem;
+            color: var(--divider);
             cursor: pointer;
-            transition: color 0.2s;
+            transition: all 0.2s ease;
+            padding: 0.25rem;
+            border-radius: 4px;
 
-            &:hover,
+            &:hover {
+              color: #ffd700;
+              background: rgba(255, 215, 0, 0.1);
+              transform: scale(1.1);
+            }
+
             &.active {
               color: #ffd700;
             }
@@ -768,23 +813,31 @@ onMounted(() => {
 
         .form-control {
           width: 100%;
-          padding: 0.75rem;
-          border: 1px solid var(--color-border);
+          padding: 0.875rem 1rem;
+          border: 2px solid var(--input-border);
           border-radius: 8px;
-          background: var(--color-background);
-          color: var(--color-text-primary);
+          background: var(--input-bg);
+          color: var(--text-primary);
           font-family: inherit;
           font-size: 0.875rem;
+          line-height: 1.5;
           resize: vertical;
-          min-height: 100px;
+          min-height: 120px;
+          transition: all 0.3s ease;
 
           &:focus {
             outline: none;
-            border-color: var(--color-primary);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
           }
 
           &::placeholder {
-            color: var(--color-text-tertiary);
+            color: var(--text-secondary);
+            opacity: 0.8;
+          }
+
+          &:hover {
+            border-color: var(--accent-primary);
           }
         }
       }
@@ -792,48 +845,111 @@ onMounted(() => {
       .form-actions {
         display: flex;
         justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
 
         .submit-button {
-          background: var(--color-primary);
-          color: white;
+          background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+          color: var(--button-text);
           border: none;
           border-radius: 8px;
-          padding: 0.75rem 1.5rem;
-          font-weight: 500;
+          padding: 0.875rem 2rem;
+          font-weight: 600;
+          font-size: 0.875rem;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
 
-          &:hover:not(:disabled) {
-            background: var(--color-primary-dark);
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(var(--accent-primary-rgb), 0.3);
+          }
+
+          &:active {
+            transform: translateY(0);
           }
 
           &:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+          }
+
+          &::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+          }
+
+          &:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+          }
+        }
+      }
+
+      // 登录提示样式
+      .login-prompt {
+        text-align: center;
+        padding: 2rem;
+        background: var(--bg-secondary);
+        border: 2px dashed var(--divider);
+        border-radius: 12px;
+        color: var(--text-secondary);
+
+        p {
+          margin: 0 0 1rem 0;
+          font-size: 0.875rem;
+        }
+
+        a {
+          color: var(--accent-primary);
+          text-decoration: none;
+          font-weight: 600;
+          transition: color 0.2s ease;
+
+          &:hover {
+            color: var(--accent-secondary);
+            text-decoration: underline;
           }
         }
       }
     }
 
-    .login-prompt {
-      background: var(--color-background-secondary);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-      text-align: center;
+    // CSS 动画
+    @keyframes ripple {
+      0% {
+        transform: scale(0, 0);
+        opacity: 1;
+      }
+      20% {
+        transform: scale(25, 25);
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: scale(40, 40);
+      }
+    }
 
-      p {
-        margin: 0;
-        color: var(--color-text-secondary);
-
-        a {
-          color: var(--color-primary);
-          text-decoration: none;
-
-          &:hover {
-            text-decoration: underline;
-          }
-        }
+    @keyframes gradient-shift {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
       }
     }
 
@@ -844,10 +960,17 @@ onMounted(() => {
         gap: 1.5rem;
 
         .review-item {
-          background: var(--color-background-secondary);
+          background: var(--card-bg);
+          border: 1px solid var(--divider);
           border-radius: 12px;
           padding: 1.5rem;
-          border: 1px solid var(--color-border);
+          box-shadow: var(--shadow);
+          transition: all 0.3s ease;
+
+          &:hover {
+            box-shadow: var(--card-hover-shadow);
+            transform: translateY(-2px);
+          }
 
           .review-header {
             display: flex;
@@ -864,46 +987,54 @@ onMounted(() => {
                 width: 40px;
                 height: 40px;
                 border-radius: 50%;
-                background: var(--color-primary);
-                color: white;
+                background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+                color: var(--button-text);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-weight: 600;
                 font-size: 0.875rem;
+                border: 2px solid var(--divider);
               }
 
               .user-info {
                 .user-name {
-                  font-weight: 500;
-                  color: var(--color-text-primary);
+                  font-weight: 600;
+                  color: var(--text-primary);
                   margin-bottom: 0.25rem;
+                  font-size: 0.875rem;
                 }
 
                 .review-date {
                   font-size: 0.75rem;
-                  color: var(--color-text-tertiary);
+                  color: var(--text-secondary);
                 }
               }
             }
 
             .review-rating {
-              .star {
-                color: #ffd700;
-                font-size: 1rem;
+              display: flex;
+              gap: 0.25rem;
 
-                &:not(.star--filled) {
-                  color: var(--color-border);
+              .star {
+                font-size: 1rem;
+                color: var(--divider);
+                transition: color 0.2s ease;
+
+                &.star--filled {
+                  color: #ffd700;
                 }
               }
             }
           }
 
           .review-content {
+            .review-comment,
             p {
-              margin: 0;
-              color: var(--color-text-secondary);
+              color: var(--text-primary);
               line-height: 1.6;
+              font-size: 0.875rem;
+              margin: 0;
             }
           }
         }

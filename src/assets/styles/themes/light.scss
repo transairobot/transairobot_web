@@ -37,3 +37,17 @@
   --selection-bg: rgba(30, 144, 255, 0.2);
   --selection-text: #333333;
 }
+/* Additional surface and status colors for AppsManager */
+:root {
+  --surface-primary: #ffffff;
+  --surface-secondary: #f8f9fa;
+  --surface-tertiary: #e9ecef;
+  
+  --success-bg: #d4edda;
+  --success-text: #155724;
+  --success-dark: #218838;
+  --error-bg: #f8d7da;
+  --error-text: #721c24;
+  --error-color: #dc3545;
+  --error-color-dark: #c82333;
+}

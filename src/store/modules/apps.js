@@ -58,7 +58,7 @@ export default {
         commit('SET_FEATURED_APPS', Array.isArray(featuredApps) ? featuredApps : []);
       } catch (error) {
         console.error('Failed to fetch featured apps:', error);
-        commit('SET_ERROR', error.message || 'Failed to fetch featured applications');
+        // 静默处理错误，不设置错误状态
         commit('SET_FEATURED_APPS', []);
       } finally {
         commit('SET_LOADING', false);

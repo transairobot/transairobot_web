@@ -133,13 +133,25 @@ class AdminService {
   async getApplicationsForAdmin(
     params: { page?: number; limit?: number; name?: string } = {}
   ): Promise<any> {
-    return await api.get('/admin/applications', { params });
+    const queryParams = {
+      page: 1,
+      limit: 20,
+      ...params
+    };
+
+    return await api.get('/admin/applications', {
+      params: queryParams,
+      showErrorNotification: false
+    });
   }
 
   async getFeaturedApplicationsForAdmin(
     params: { page?: number; limit?: number; name?: string } = {}
   ): Promise<any> {
-    return await api.get('/admin/applications/feature/list', { params });
+    return await api.get('/admin/applications/feature/list', {
+      params,
+      showErrorNotification: false
+    });
   }
 
   async createApplication(applicationData: any): Promise<Application> {

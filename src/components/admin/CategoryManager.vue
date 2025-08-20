@@ -48,10 +48,6 @@
       <div v-if="loading" class="loading-state">
         <p>Loading categories...</p>
       </div>
-      <div v-else-if="error" class="error-state">
-        <p>{{ error }}</p>
-        <button @click="fetchCategories">Retry</button>
-      </div>
 
       <div v-else-if="categories.length === 0" class="empty-state">
         <p>No categories found</p>
