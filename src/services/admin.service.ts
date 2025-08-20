@@ -158,7 +158,7 @@ class AdminService {
 
   // 分类管理
   async getCategories(): Promise<Category[]> {
-    return await api.get('/applications/categories');
+    return await api.get('/admin/categories/list');
   }
 
   async createCategory(categoryData: any): Promise<Category> {
