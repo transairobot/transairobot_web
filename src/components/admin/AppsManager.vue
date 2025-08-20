@@ -1,0 +1,866 @@
+<template>
+  <div class="apps-manager">
+    <div class="section-header">
+      <h2>Application Management</h2>
+      <p>Create, edit, and manage applications</p>
+    </div>
+
+    <div class="app-actions">
+      <button class="add-app-btn" @click="openAddAppForm">
+        <i class="fas fa-plus"></i> Add New Application
+      </button>
+    </div>
+
+    <div class="search-bar">
+      <input
+        type="text"
+        v-model="searchQuery"
+        placeholder="Search applications..."
+        @input="searchApps"
+      />
+    </div>
+
+    <div class="app-list">
+      <div v-if="loading" class="loading-state">
+        <p>Loading applications...</p>
+      </div>
+
+      <div v-else-if="filteredApps.length === 0" class="empty-state">
+        <p>No applications found</p>
+      </div>
+
+      <div v-else class="apps-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Icon</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Version</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="app in filteredApps" :key="app.id">
+              <td>
+                <img
+                  :src="app.iconUrl || '/assets/icons/default-app.png'"
+                  :alt="app.name"
+                  class="app-icon"
+                />
+              </td>
+              <td>{{ app.name }}</td>
+              <td>{{ app.category || 'No Category' }}</td>
+              <td>{{ app.version }}</td>
+              <td>
+                <span class="status-badge" :class="app.status || 'active'">
+                  {{ app.status || 'active' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="edit-btn" @click="editApp(app)" title="Edit">✏️</button>
+                <button class="delete-btn" @click="confirmDeleteApp(app)" title="Delete">🗑️</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Add/Edit App Form -->
+    <div class="modal" v-if="showAddAppForm || editingApp">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>{{ editingApp ? 'Edit Application' : 'Add New Application' }}</h3>
+          <button class="close-btn" @click="cancelAppForm">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="saveApp">
+            <div class="form-group">
+              <label for="appName">Application Name</label>
+              <input
+                type="text"
+                id="appName"
+                v-model="appForm.name"
+                placeholder="Enter application name"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="appDescription">Description</label>
+              <textarea
+                id="appDescription"
+                v-model="appForm.description"
+                placeholder="Enter application description"
+                rows="3"
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="appCategory">Category</label>
+              <select
+                id="appCategory"
+                v-model="appForm.category"
+                required
+                :disabled="categoriesLoading"
+              >
+                <option v-if="!appForm.category" value="" disabled>
+                  {{ categoriesLoading ? 'Loading categories...' : 'Select Category' }}
+                </option>
+                <option v-for="category in categories" :key="category.id" :value="category.id">
+                  {{ category.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="appVersion">Version</label>
+              <input
+                type="text"
+                id="appVersion"
+                v-model="appForm.version"
+                placeholder="e.g., 1.0.0"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Application Icon</label>
+              <FileUpload
+                accept="image/*"
+                :multiple="false"
+                hint="Supports JPG, PNG formats, recommended size 512x512"
+                @upload-success="handleIconUpload"
+              />
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="cancel-btn" @click="cancelAppForm">Cancel</button>
+              <button type="submit" class="save-btn" :disabled="saving">
+                {{
+                  saving ? 'Saving...' : editingApp ? 'Update Application' : 'Create Application'
+                }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" v-if="showDeleteConfirmation">
+      <div class="modal-content delete-modal">
+        <div class="modal-header">
+          <div class="delete-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h3>Delete Application</h3>
+        </div>
+        <div class="modal-body">
+          <p>
+            Are you sure you want to delete the application
+            <strong>"{{ appToDelete?.name }}"</strong>?
+          </p>
+          <p class="warning">
+            This action cannot be undone and will permanently remove the application from the store.
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="showDeleteConfirmation = false">
+            <i class="fas fa-times"></i>
+            Cancel
+          </button>
+          <button class="delete-btn" @click="deleteApp">
+            <i class="fas fa-trash"></i>
+            Delete Application
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { adminService } from '@/services';
+import FileUpload from '../common/FileUpload.vue';
+
+export default {
+  name: 'AppsManager',
+  components: {
+    FileUpload
+  },
+  emits: ['show-notification'],
+  data() {
+    return {
+      searchQuery: '',
+      apps: [],
+      filteredApps: [],
+      categories: [],
+      loading: false,
+      categoriesLoading: false,
+      error: null,
+      showAddAppForm: false,
+      editingApp: null,
+      appForm: {
+        name: '',
+        description: '',
+        category: '', // 这里存储的是categoryId
+        version: '',
+        iconURI: ''
+      },
+      saving: false,
+      showDeleteConfirmation: false,
+      appToDelete: null,
+      searchTimeout: null // 添加防抖定时器
+    };
+  },
+  methods: {
+    async fetchApps() {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const result = await adminService.getApplicationsForAdmin();
+
+        // 处理不同的API响应格式
+        let appsData = [];
+
+        // 标准格式: {code: 0, message: "", data: [...]}
+        if (result && result.data && Array.isArray(result.data)) {
+          appsData = result.data;
+        }
+        // 直接数组格式: [...]
+        else if (Array.isArray(result)) {
+          appsData = result;
+        }
+        // 嵌套格式: {applications: [...]} 或 {items: [...]}
+        else if (result && result.applications && Array.isArray(result.applications)) {
+          appsData = result.applications;
+        } else if (result && result.items && Array.isArray(result.items)) {
+          appsData = result.items;
+        }
+        // 索引对象格式: {0: {...}, 1: {...}} (API转换后的格式)
+        else if (result && typeof result === 'object' && !Array.isArray(result)) {
+          const keys = Object.keys(result);
+          // 检查是否所有键都是数字索引
+          const isIndexedObject = keys.length > 0 && keys.every(key => /^\d+$/.test(key));
+
+          if (isIndexedObject) {
+            appsData = Object.values(result);
+          } else {
+            appsData = [];
+          }
+        }
+
+        this.apps = appsData;
+        this.filteredApps = [...this.apps];
+      } catch (error) {
+        // 静默处理错误，不显示任何通知或错误状态
+        console.error('Error fetching apps:', error);
+        this.apps = [];
+        this.filteredApps = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchCategories() {
+      this.categoriesLoading = true;
+      try {
+        const result = await adminService.getCategories();
+        // 参考CategoryManager的处理方式
+        let categories = [];
+        if (Array.isArray(result)) {
+          categories = result;
+        } else if (result && Array.isArray(result.data)) {
+          categories = result.data;
+        } else if (result && typeof result === 'object') {
+          categories = Object.values(result);
+        }
+
+        // 确保每个分类都有必需的属性
+        this.categories = categories.map(category => ({
+          id: category.id || category._id,
+          name: category.name || 'Unnamed Category',
+          description: category.description || ''
+        }));
+
+        // 强制重新渲染
+        this.$forceUpdate();
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        this.categories = [];
+      } finally {
+        this.categoriesLoading = false;
+      }
+    },
+
+    getCategoryName(categoryIdOrName) {
+      if (!categoryIdOrName) return 'No Category';
+
+      // 先尝试按ID查找
+      let category = this.categories.find(cat => cat.id === categoryIdOrName);
+
+      // 如果按ID找不到，再按名称查找
+      if (!category) {
+        category = this.categories.find(cat => cat.name === categoryIdOrName);
+      }
+
+      return category ? category.name : 'Unknown Category';
+    },
+
+    searchApps() {
+      // 清除之前的定时器
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+
+      // 设置新的定时器，500ms后执行搜索
+      this.searchTimeout = setTimeout(() => {
+        if (!this.searchQuery.trim()) {
+          this.filteredApps = [...this.apps];
+          return;
+        }
+
+        const query = this.searchQuery.toLowerCase();
+        this.filteredApps = this.apps.filter(
+          app =>
+            app.name.toLowerCase().includes(query) ||
+            (app.category || '').toLowerCase().includes(query)
+        );
+      }, 500);
+    },
+
+    async openAddAppForm() {
+      await this.fetchCategories();
+      this.showAddAppForm = true;
+    },
+
+    async editApp(app) {
+      await this.fetchCategories();
+      this.editingApp = app;
+      this.appForm = {
+        name: app.name,
+        description: app.description,
+        category: app.category,
+        version: app.version,
+        iconURI: app.iconURI || ''
+      };
+      this.showAddAppForm = true;
+    },
+
+    cancelAppForm() {
+      this.showAddAppForm = false;
+      this.editingApp = null;
+      this.appForm = {
+        name: '',
+        description: '',
+        category: '',
+        version: '',
+        iconURI: ''
+      };
+    },
+
+    async saveApp() {
+      this.saving = true;
+
+      try {
+        if (this.editingApp) {
+          await adminService.updateApplication(this.editingApp.id, this.appForm);
+          this.$emit('show-notification', {
+            type: 'success',
+            message: `Application "${this.appForm.name}" updated successfully`
+          });
+        } else {
+          await adminService.createApplication(this.appForm);
+          this.$emit('show-notification', {
+            type: 'success',
+            message: `Application "${this.appForm.name}" created successfully`
+          });
+        }
+
+        this.cancelAppForm();
+        this.fetchApps();
+      } catch (error) {
+        console.error('Error saving app:', error);
+        this.$emit('show-notification', {
+          type: 'error',
+          message: `Failed to ${this.editingApp ? 'update' : 'create'} application`
+        });
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    confirmDeleteApp(app) {
+      this.appToDelete = app;
+      this.showDeleteConfirmation = true;
+    },
+
+    async deleteApp() {
+      if (!this.appToDelete) return;
+
+      try {
+        await adminService.deleteApplication(this.appToDelete.id);
+        this.$emit('show-notification', {
+          type: 'success',
+          message: `Application "${this.appToDelete.name}" deleted successfully`
+        });
+        this.fetchApps();
+      } catch (error) {
+        console.error('Error deleting app:', error);
+        this.$emit('show-notification', {
+          type: 'error',
+          message: `Failed to delete application "${this.appToDelete.name}"`
+        });
+      } finally {
+        this.showDeleteConfirmation = false;
+        this.appToDelete = null;
+      }
+    },
+
+    handleIconUpload(file) {
+      // file 结构: { name: '...', url: {iconURI: 'path/to/file.jpg'}, file: ... }
+      // 我们需要提取 file.url.iconURI 的值
+      if (file && file.url && file.url.iconURI) {
+        this.appForm.iconURI = file.url.iconURI;
+      } else if (file && file.iconURI) {
+        this.appForm.iconURI = file.iconURI;
+      } else {
+        console.error('无法从 file 参数中提取 iconURI:', file);
+      }
+    }
+  },
+  created() {
+    this.fetchApps();
+    // 移除初始化时的fetchCategories调用，只在需要时获取
+  },
+  beforeUnmount() {
+    // 清理定时器，防止内存泄漏
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+  }
+};
+</script>
+
+<style lang="scss" scoped>
+.apps-manager {
+  .section-header {
+    margin-bottom: 1.5rem;
+
+    h2 {
+      margin: 0 0 0.5rem 0;
+      color: var(--text-primary);
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin: 0;
+    }
+  }
+
+  .app-actions {
+    margin-bottom: 1.5rem;
+
+    .add-app-btn {
+      padding: 0.5rem 1rem;
+      background-color: var(--accent-primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      &:hover {
+        background-color: var(--accent-primary-dark);
+      }
+
+      i {
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  .search-bar {
+    margin-bottom: 1.5rem;
+
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+      font-size: 1rem;
+
+      &:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+      }
+    }
+  }
+
+  .app-list {
+    .loading-state,
+    .error-state,
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      color: var(--text-secondary);
+
+      button {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: var(--accent-primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+    }
+
+    .apps-table {
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+
+        th,
+        td {
+          padding: 1rem;
+          text-align: left;
+          border-bottom: 1px solid var(--border-color);
+          color: var(--text-primary);
+        }
+
+        th {
+          font-weight: 600;
+          color: var(--text-secondary);
+          background-color: var(--surface-secondary);
+        }
+
+        .app-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 6px;
+          object-fit: cover;
+        }
+
+        .status-badge {
+          padding: 0.25rem 0.5rem;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          text-transform: capitalize;
+
+          &.active {
+            background-color: var(--success-bg, #d4edda);
+            color: var(--success-text, #155724);
+          }
+
+          &.inactive {
+            background-color: var(--error-bg, #f8d7da);
+            color: var(--error-text, #721c24);
+          }
+        }
+
+        td.actions {
+          display: flex;
+          gap: 0.5rem;
+
+          button {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+
+            &.edit-btn {
+              background-color: var(--surface-secondary);
+              color: var(--text-primary);
+
+              &:hover {
+                background-color: var(--accent-primary);
+                color: white;
+              }
+            }
+
+            &.delete-btn {
+              background-color: var(--surface-secondary);
+              color: var(--error-color, #dc3545);
+
+              &:hover {
+                background-color: var(--error-color, #dc3545);
+                color: white;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+
+    .modal-content {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+
+      .modal-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        h3 {
+          margin: 0;
+          color: var(--text-primary);
+        }
+
+        .close-btn {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          color: var(--text-secondary);
+        }
+      }
+
+      .modal-body {
+        padding: 1.5rem;
+        overflow-y: auto;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 0.9rem;
+        background-color: var(--card-bg);
+        color: var(--text-primary);
+
+        &:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+        }
+      }
+
+      textarea {
+        resize: vertical;
+      }
+    }
+
+    .form-actions,
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+
+      button {
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+
+        &.cancel-btn {
+          background-color: var(--surface-secondary);
+          color: var(--text-primary);
+          border: 1px solid var(--border-color);
+
+          &:hover {
+            background-color: var(--surface-tertiary);
+          }
+        }
+
+        &.save-btn {
+          background-color: var(--accent-primary);
+          color: white;
+          border: none;
+
+          &:hover {
+            background-color: var(--accent-primary-dark);
+          }
+
+          &:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+          }
+        }
+
+        &.delete-btn {
+          background-color: var(--error-color, #dc3545);
+          color: white;
+          border: none;
+
+          &:hover {
+            background-color: var(--error-color-dark, #c82333);
+          }
+        }
+      }
+    }
+
+    .warning {
+      color: var(--error-color, #dc3545);
+      font-weight: 500;
+    }
+
+    // 删除确认弹窗的特殊样式
+    .modal-content.delete-modal {
+      max-width: 480px;
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+
+        .delete-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.2rem;
+          box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+        }
+
+        h3 {
+          margin: 0;
+          color: #2d3748;
+          font-size: 1.25rem;
+          font-weight: 600;
+        }
+      }
+
+      .modal-body {
+        padding: 1.5rem;
+
+        p {
+          margin: 0 0 1rem 0;
+          color: var(--text-primary);
+          line-height: 1.5;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          strong {
+            color: #2d3748;
+            font-weight: 600;
+          }
+        }
+
+        .warning {
+          color: #e53e3e;
+          font-weight: 500;
+          font-size: 0.9rem;
+          background: #fed7d7;
+          padding: 0.75rem;
+          border-radius: 6px;
+          border-left: 4px solid #e53e3e;
+        }
+      }
+
+      .modal-actions {
+        padding: 1rem 1.5rem;
+        background: #f7fafc;
+        border-top: 1px solid var(--border-color);
+        gap: 0.75rem;
+
+        button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem;
+          border-radius: 6px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+
+          i {
+            font-size: 0.9rem;
+          }
+
+          &.cancel-btn {
+            background: white;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+
+            &:hover {
+              background: #f7fafc;
+              border-color: #cbd5e0;
+              transform: translateY(-1px);
+            }
+          }
+
+          &.delete-btn {
+            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
+
+            &:hover {
+              background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+              box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
+              transform: translateY(-1px);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+</style>
