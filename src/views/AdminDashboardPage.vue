@@ -57,7 +57,7 @@
             </div>
           </div>
 
-          <div class="admin-nav-card" @click="showAnalytics = true">
+          <div class="admin-nav-card" @click="$router.push('/admin/analytics')">
             <div class="card-icon">
               <i class="fas fa-chart-bar"></i>
             </div>
@@ -110,21 +110,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Analytics Modal -->
-        <div v-if="showAnalytics" class="modal-overlay" @click="showAnalytics = false">
-          <div class="modal-content" @click.stop>
-            <div class="modal-header">
-              <h2>Analytics</h2>
-              <button @click="showAnalytics = false" class="close-btn">×</button>
-            </div>
-            <div class="modal-body">
-              <div class="analytics-content">
-                <p>Analytics functionality is under development...</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
     <AppFooter />
@@ -147,7 +132,6 @@ export default {
       systemStats: null,
       users: [],
       showUserManagement: false,
-      showAnalytics: false,
       userFilters: {
         role: '',
         status: ''

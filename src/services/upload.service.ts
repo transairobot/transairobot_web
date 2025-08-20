@@ -79,9 +79,17 @@ class UploadService {
     }
 
     // 验证图片格式
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/svg+xml'
+    ];
     if (!allowedTypes.includes(file.type)) {
-      const error = 'Unsupported image format. Please select JPG, JPEG, PNG, WebP, GIF or SVG format';
+      const error =
+        'Unsupported image format. Please select JPG, JPEG, PNG, WebP, GIF or SVG format';
       notificationService.error(error);
       throw new Error(error);
     }

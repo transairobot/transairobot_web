@@ -31,6 +31,11 @@ class TransformerService {
   transformResponse(data: any, endpoint: string): any {
     if (!data) return data;
 
+    // 对于analytics端点，直接返回原始数据，不进行转换
+    if (endpoint.includes('/admin/analysis/')) {
+      return data;
+    }
+
     if (endpoint.includes('/applications/list')) {
       let transformedData = data;
       if (transformedData && Array.isArray(transformedData)) {

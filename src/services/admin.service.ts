@@ -17,6 +17,17 @@ export class User {
   ) {}
 }
 
+export interface TimeSeriesPoint {
+  date: string; // 时间点
+  value: number; // 该时间点的统计值
+}
+
+export interface TimeRangeRequest {
+  start: number; // Unix timestamp in seconds
+  end: number; // Unix timestamp in seconds
+  granularity: string; // 'day', 'week', 'month'
+}
+
 export class SystemAnalytics {
   constructor(
     public totalUsers: number,
@@ -91,18 +102,30 @@ class AdminService {
     return await api.get('/admin/analysis/system');
   }
 
-  async getUserAnalytics(timeRange: any = {}): Promise<TimeSeriesData[]> {
-    const params = { ...timeRange };
+  async getUserAnalytics(timeRange: TimeRangeRequest): Promise<TimeSeriesPoint[]> {
+    const params = {
+      start: timeRange.start,
+      end: timeRange.end,
+      granularity: timeRange.granularity
+    };
     return await api.get('/admin/analysis/users', { params });
   }
 
-  async getApplicationAnalytics(timeRange: any = {}): Promise<TimeSeriesData[]> {
-    const params = { ...timeRange };
+  async getApplicationAnalytics(timeRange: TimeRangeRequest): Promise<TimeSeriesPoint[]> {
+    const params = {
+      start: timeRange.start,
+      end: timeRange.end,
+      granularity: timeRange.granularity
+    };
     return await api.get('/admin/analysis/applications', { params });
   }
 
-  async getRobotAnalytics(timeRange: any = {}): Promise<TimeSeriesData[]> {
-    const params = { ...timeRange };
+  async getRobotAnalytics(timeRange: TimeRangeRequest): Promise<TimeSeriesPoint[]> {
+    const params = {
+      start: timeRange.start,
+      end: timeRange.end,
+      granularity: timeRange.granularity
+    };
     return await api.get('/admin/analysis/robots', { params });
   }
 
