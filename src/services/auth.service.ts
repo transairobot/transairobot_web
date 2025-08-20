@@ -60,7 +60,7 @@ class AuthService {
     } catch (error: any) {
       // Handle specific registration errors
       if (error.message && error.message.includes('already exists')) {
-        notificationService.error('该邮箱已被注册');
+        notificationService.error('This email is already registered');
       }
       throw error;
     }
@@ -81,7 +81,7 @@ class AuthService {
    */
   async updateProfile(profileData: Partial<User>): Promise<User> {
     const result = await api.put('/auth/profile', profileData);
-    notificationService.success('个人资料更新成功');
+    notificationService.success('Profile updated successfully');
     return result;
   }
 
@@ -98,7 +98,7 @@ class AuthService {
         includeAuth: false
       }
     );
-    notificationService.success('密码重置邮件已发送');
+    notificationService.success('Password reset email sent');
     return result;
   }
 
@@ -116,7 +116,7 @@ class AuthService {
         includeAuth: false
       }
     );
-    notificationService.success('密码重置成功');
+    notificationService.success('Password reset successfully');
     return result;
   }
 
@@ -132,12 +132,12 @@ class AuthService {
         old_password: currentPassword,
         new_password: newPassword
       });
-      notificationService.success('密码修改成功');
+      notificationService.success('Password changed successfully');
       return result;
     } catch (error: any) {
       // Handle specific password change errors
       if (error.message === 'Current password is incorrect') {
-        notificationService.error('当前密码错误，请重试');
+        notificationService.error('Current password is incorrect, please try again');
       }
       throw error;
     }
@@ -157,7 +157,7 @@ class AuthService {
 
     // 然后更新用户头像
     await api.put('/auth/avatar', { avatar_url: avatarUrl });
-    notificationService.success('头像更新成功');
+    notificationService.success('Avatar updated successfully');
     return avatarUrl;
   }
 
@@ -174,7 +174,7 @@ class AuthService {
         includeAuth: false
       }
     );
-    notificationService.success('验证码已发送到您的邮箱');
+    notificationService.success('Verification code sent to your email');
     return result;
   }
 

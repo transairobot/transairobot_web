@@ -16,7 +16,7 @@ class UploadService {
     // 验证文件大小 (15MB)
     const maxSize = 15 * 1024 * 1024;
     if (file.size > maxSize) {
-      const error = `文件大小超过限制 (${this.formatFileSize(maxSize)})`;
+      const error = `File size exceeds limit (${this.formatFileSize(maxSize)})`;
       notificationService.error(error);
       throw new Error(error);
     }
@@ -36,7 +36,7 @@ class UploadService {
 
       return fileUrl;
     } catch (error: any) {
-      const errorMessage = error.message || '文件上传失败';
+      const errorMessage = error.message || 'File upload failed';
       notificationService.error(errorMessage);
       throw error;
     }
@@ -73,15 +73,15 @@ class UploadService {
   async uploadImage(file: File, onProgress?: (progress: number) => void): Promise<string> {
     // 验证是否为图片文件
     if (!file.type.startsWith('image/')) {
-      const error = '请选择图片文件';
+      const error = 'Please select an image file';
       notificationService.error(error);
       throw new Error(error);
     }
 
     // 验证图片格式
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
-      const error = '不支持的图片格式，请选择 JPG、PNG、GIF 或 WebP 格式';
+      const error = 'Unsupported image format. Please select JPG, JPEG, PNG, WebP, GIF or SVG format';
       notificationService.error(error);
       throw new Error(error);
     }
@@ -102,7 +102,7 @@ class UploadService {
       img.onload = async () => {
         // 建议头像尺寸
         if (img.width < 100 || img.height < 100) {
-          notificationService.warning('建议上传尺寸至少为 100x100 的头像');
+          notificationService.warning('Recommended avatar size is at least 100x100 pixels');
         }
 
         try {
@@ -114,7 +114,7 @@ class UploadService {
       };
 
       img.onerror = () => {
-        const error = '无法读取图片文件';
+        const error = 'Unable to read image file';
         notificationService.error(error);
         reject(new Error(error));
       };

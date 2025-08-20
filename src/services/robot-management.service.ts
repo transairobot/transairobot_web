@@ -22,7 +22,7 @@ export class Robot {
 class RobotManagementService {
   async addRobot(bindCode: string): Promise<Robot> {
     const result = await api.post(`/robots/add_robot/${bindCode}`, {});
-    notificationService.success('机器人添加成功');
+    notificationService.success('Robot added successfully');
     return result;
   }
 
@@ -36,25 +36,25 @@ class RobotManagementService {
 
   async removeRobot(robotId: string): Promise<any> {
     const result = await api.delete(`/robots/remove/${robotId}`);
-    notificationService.success('机器人删除成功');
+    notificationService.success('Robot removed successfully');
     return result;
   }
 
   async installRobotApp(robotId: string, appId: string): Promise<any> {
     const result = await api.put(`/robots/install_app/${robotId}/${appId}`, {});
-    notificationService.success('应用安装成功');
+    notificationService.success('Application installed successfully');
     return result;
   }
 
   async runRobotApp(robotId: string, appId: string): Promise<any> {
     const result = await api.put(`/robots/run_app/${robotId}/${appId}`, {});
-    notificationService.success('应用运行成功');
+    notificationService.success('Application started successfully');
     return result;
   }
 
   async updateRobot(robotId: string, robotData: Partial<Robot>): Promise<Robot> {
     const result = await api.put(`/robots/update/${robotId}`, robotData);
-    notificationService.success('机器人更新成功');
+    notificationService.success('Robot updated successfully');
     return result;
   }
 

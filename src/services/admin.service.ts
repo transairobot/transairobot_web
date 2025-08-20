@@ -70,19 +70,19 @@ class AdminService {
 
   async updateUser(userId: string, userData: Partial<User>): Promise<User> {
     const result = await api.put(`/admin/users/${userId}`, userData);
-    notificationService.success('用户更新成功');
+    notificationService.success('User updated successfully');
     return result;
   }
 
   async disableUser(userId: string): Promise<any> {
     const result = await api.post(`/admin/users/${userId}/disable`, {});
-    notificationService.success('用户已禁用');
+    notificationService.success('User disabled successfully');
     return result;
   }
 
   async enableUser(userId: string): Promise<any> {
     const result = await api.post(`/admin/users/${userId}/enable`, {});
-    notificationService.success('用户已启用');
+    notificationService.success('User enabled successfully');
     return result;
   }
 
@@ -121,38 +121,38 @@ class AdminService {
 
   async createApplication(applicationData: any): Promise<Application> {
     const result = await api.post('/admin/applications', applicationData);
-    notificationService.success('应用创建成功');
+    notificationService.success('Application created successfully');
     return result;
   }
 
   async updateApplication(appId: string, applicationData: any): Promise<Application> {
     const result = await api.put(`/admin/applications/${appId}`, applicationData);
-    notificationService.success('应用更新成功');
+    notificationService.success('Application updated successfully');
     return result;
   }
 
   async deleteApplication(appId: string): Promise<any> {
     const result = await api.delete(`/admin/applications/${appId}`);
-    notificationService.success('应用删除成功');
+    notificationService.success('Application deleted successfully');
     return result;
   }
 
   async createApplicationScreenshot(appId: string, screenshotData: any): Promise<any> {
     const result = await api.post(`/admin/applications/${appId}/screenshot`, screenshotData);
-    notificationService.success('应用截图创建成功');
+    notificationService.success('Application screenshot created successfully');
     return result;
   }
 
   // 应用推荐功能
   async featureApplication(appId: string): Promise<any> {
     const result = await api.post(`/admin/applications/${appId}/feature?feature=feature`, {});
-    notificationService.success('应用已设为推荐');
+    notificationService.success('Application featured successfully');
     return result;
   }
 
   async unfeatureApplication(appId: string): Promise<any> {
     const result = await api.post(`/admin/applications/${appId}/feature?feature=unfeature`, {});
-    notificationService.success('应用已取消推荐');
+    notificationService.success('Application unfeatured successfully');
     return result;
   }
 
@@ -163,19 +163,19 @@ class AdminService {
 
   async createCategory(categoryData: any): Promise<Category> {
     const result = await api.post('/admin/categories', categoryData);
-    notificationService.success('分类创建成功');
+    notificationService.success('Category created successfully');
     return result;
   }
 
   async updateCategory(categoryId: string, categoryData: any): Promise<Category> {
     const result = await api.put(`/admin/categories/${categoryId}`, categoryData);
-    notificationService.success('分类更新成功');
+    notificationService.success('Category updated successfully');
     return result;
   }
 
   async deleteCategory(categoryId: string): Promise<any> {
     const result = await api.delete(`/admin/categories/${categoryId}`);
-    notificationService.success('分类删除成功');
+    notificationService.success('Category deleted successfully');
     return result;
   }
 
