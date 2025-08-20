@@ -97,7 +97,7 @@ export default {
         // Filter by category
         const categoryMatch =
           selectedCategory.value === 'all' ||
-          (app.category && app.category.includes(selectedCategory.value));
+          (app.categoryId && app.categoryId === selectedCategory.value);
 
         // Filter by search query
         const searchMatch =

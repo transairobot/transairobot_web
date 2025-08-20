@@ -2,8 +2,8 @@ import api from './api';
 import authService from './auth.service';
 import applicationStoreService from './application-store.service';
 import robotManagementService from './robot-management.service';
-import developerService from './developer.service';
 import adminService from './admin.service';
+import uploadService from './upload.service';
 import notificationService from './notification.service';
 import errorHandler from './error-handler.service';
 import transformer from './transformer.service';
@@ -13,8 +13,8 @@ export {
   authService,
   applicationStoreService,
   robotManagementService,
-  developerService,
   adminService,
+  uploadService,
   notificationService,
   errorHandler,
   transformer
@@ -25,8 +25,8 @@ export default {
   auth: authService,
   applicationStore: applicationStoreService,
   robotManagement: robotManagementService,
-  developer: developerService,
   admin: adminService,
+  upload: uploadService,
   notification: notificationService,
   errorHandler,
   transformer

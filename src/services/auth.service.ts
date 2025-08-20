@@ -1,6 +1,15 @@
 import api from './api';
 import notificationService from './notification.service';
-import { RegisterReq, User } from './admin.service';
+import { User } from './admin.service';
+
+export class RegisterReq {
+  constructor(
+    public email: string,
+    public password: string,
+    public nickname: string,
+    public verify_code: string
+  ) {}
+}
 
 /**
  * Authentication service
@@ -51,25 +60,9 @@ class AuthService {
     } catch (error: any) {
       // Handle specific registration errors
       if (error.message && error.message.includes('already exists')) {
-        notificationService.error('An account with this email already exists.');
+        notificationService.error('该邮箱已被注册');
       }
       throw error;
-    }
-  }
-
-  /**
-   * Logout user
-   * @returns Promise resolving to logout status
-   */
-  async logout(): Promise<{ success: boolean }> {
-    try {
-      return await api.post('/auth/logout', null, {
-        showErrorNotification: false // Don't show errors on logout
-      });
-    } catch (error) {
-      // Ignore errors on logout
-      console.warn('Logout error:', error);
-      return { success: true };
     }
   }
 
@@ -88,7 +81,7 @@ class AuthService {
    */
   async updateProfile(profileData: Partial<User>): Promise<User> {
     const result = await api.put('/auth/profile', profileData);
-    notificationService.success('Profile updated successfully');
+    notificationService.success('个人资料更新成功');
     return result;
   }
 
@@ -98,14 +91,14 @@ class AuthService {
    * @returns Promise resolving to reset request status
    */
   async requestPasswordReset(email: string): Promise<any> {
-    const result = await api.post(
+    const result = await api.put(
       '/auth/forgot-password',
       { email },
       {
         includeAuth: false
       }
     );
-    notificationService.success('Password reset instructions have been sent to your email');
+    notificationService.success('密码重置邮件已发送');
     return result;
   }
 
@@ -116,14 +109,14 @@ class AuthService {
    * @returns Promise resolving to reset status
    */
   async resetPassword(token: string, password: string): Promise<any> {
-    const result = await api.post(
+    const result = await api.put(
       '/auth/reset-password',
       { token, password },
       {
         includeAuth: false
       }
     );
-    notificationService.success('Password has been reset successfully');
+    notificationService.success('密码重置成功');
     return result;
   }
 
@@ -135,13 +128,16 @@ class AuthService {
    */
   async changePassword(currentPassword: string, newPassword: string): Promise<any> {
     try {
-      const result = await api.post('/auth/change-password', { currentPassword, newPassword });
-      notificationService.success('Password changed successfully');
+      const result = await api.put('/user/password', {
+        old_password: currentPassword,
+        new_password: newPassword
+      });
+      notificationService.success('密码修改成功');
       return result;
     } catch (error: any) {
       // Handle specific password change errors
       if (error.message === 'Current password is incorrect') {
-        notificationService.error('Current password is incorrect. Please try again.');
+        notificationService.error('当前密码错误，请重试');
       }
       throw error;
     }
@@ -149,60 +145,20 @@ class AuthService {
 
   /**
    * Upload user avatar
-   * @param formData - Form data with avatar file
+   * @param file - Avatar file
    * @param onProgress - Progress callback function
    * @returns Promise resolving to avatar URL
    */
-  async uploadAvatar(formData: FormData, onProgress: (progress: number) => void): Promise<any> {
-    const result = await api.uploadFiles('/auth/avatar', formData, {
-      onProgress
-    });
-    notificationService.success('Avatar updated successfully');
-    return result;
-  }
+  async uploadAvatar(file: File, onProgress?: (progress: number) => void): Promise<string> {
+    const uploadService = await import('./upload.service');
 
-  /**
-   * Verify email with token
-   * @param token - Verification token
-   * @returns Promise resolving to verification status
-   */
-  async verifyEmail(token: string): Promise<any> {
-    const result = await api.post(
-      '/auth/verify-email',
-      { token },
-      {
-        includeAuth: false
-      }
-    );
-    notificationService.success('Email verified successfully');
-    return result;
-  }
+    // 使用专门的头像上传方法
+    const avatarUrl = await uploadService.default.uploadAvatar(file, onProgress);
 
-  /**
-   * Resend verification email
-   * @returns Promise resolving to resend status
-   */
-  async resendVerificationEmail(): Promise<any> {
-    const result = await api.post('/auth/resend-verification', {});
-    notificationService.success('Verification email has been sent');
-    return result;
-  }
-
-  /**
-   * Check if token is valid
-   * @param token - Token to validate
-   * @param type - Token type (reset, verify)
-   * @returns Promise resolving to token validity
-   */
-  async validateToken(token: string, type: string): Promise<any> {
-    return await api.post(
-      '/auth/validate-token',
-      { token, type },
-      {
-        includeAuth: false,
-        showErrorNotification: false
-      }
-    );
+    // 然后更新用户头像
+    await api.put('/auth/avatar', { avatar_url: avatarUrl });
+    notificationService.success('头像更新成功');
+    return avatarUrl;
   }
 
   /**
@@ -211,7 +167,6 @@ class AuthService {
    * @returns Promise resolving to send status
    */
   async sendEmailCode(email: string): Promise<any> {
-    console.log('Sending verification code to:', email);
     const result = await api.post(
       '/auth/send-email',
       { email },
@@ -219,8 +174,14 @@ class AuthService {
         includeAuth: false
       }
     );
-    notificationService.success('Verification code has been sent to your email');
+    notificationService.success('验证码已发送到您的邮箱');
     return result;
+  }
+
+  // 文件上传
+  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<string> {
+    const uploadService = await import('./upload.service');
+    return uploadService.default.uploadFile(file, onProgress);
   }
 }
 

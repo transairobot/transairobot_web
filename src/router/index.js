@@ -61,24 +61,7 @@ const routes = [
     component: lazyLoadView('RobotDetailPage'),
     meta: { requiresAuth: true }
   },
-  {
-    path: '/developer',
-    name: 'DeveloperPortal',
-    component: lazyLoadView('DeveloperPortalPage'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/developer/submit-app',
-    name: 'AppSubmission',
-    component: lazyLoadView('AppSubmissionPage'),
-    meta: { requiresAuth: true, developerRequired: true }
-  },
-  {
-    path: '/developer/verification',
-    name: 'DeveloperVerification',
-    component: lazyLoadView('DeveloperVerificationPage'),
-    meta: { requiresAuth: true }
-  },
+
   {
     path: '/profile',
     name: 'UserProfile',
@@ -103,12 +86,7 @@ const routes = [
     component: lazyLoadView('AdminDashboardPage'),
     meta: { requiresAuth: true, roles: ['admin'] }
   },
-  {
-    path: '/admin/review',
-    name: 'AdminAppReview',
-    component: lazyLoadView('AdminAppReviewPage'),
-    meta: { requiresAuth: true, roles: ['admin'] }
-  },
+
   {
     path: '/admin/store',
     name: 'AdminStoreManagement',
@@ -147,20 +125,6 @@ router.beforeEach((to, from, next) => {
     if (to.matched.some(record => record.meta.roles && record.meta.roles.length)) {
       if (!to.meta.roles.includes(userRole)) {
         next({ name: 'Home' });
-        return;
-      }
-    }
-
-    // Check if developer access is required
-    if (to.matched.some(record => record.meta.developerRequired)) {
-      const isDeveloper =
-        currentUser &&
-        (currentUser.role === 'developer' ||
-          currentUser.role === 'admin' ||
-          currentUser.developerStatus === 'approved');
-
-      if (!isDeveloper) {
-        next({ name: 'DeveloperPortal' });
         return;
       }
     }

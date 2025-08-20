@@ -1,6 +1,5 @@
 import api from './api';
 import notificationService from './notification.service';
-import { PagedResult, Log } from './admin.service';
 import { Application } from './application-store.service';
 
 // Data structure classes
@@ -20,155 +19,49 @@ export class Robot {
   }
 }
 
-export class RobotStatus {
-  constructor(
-    public robotId: string,
-    public status: 'online' | 'offline' | 'maintenance',
-    public batteryLevel: number,
-    public cpuUsage: number,
-    public memoryUsage: number
-  ) {}
-}
-
-export class TelemetryData {
-  constructor(public timestamp: Date, public value: number) {}
-}
-
-export class NetworkConfig {
-  constructor(
-    public ipAddress: string,
-    public subnetMask: string,
-    public gateway: string,
-    public dnsServers: string[]
-  ) {}
-}
-
 class RobotManagementService {
   async addRobot(bindCode: string): Promise<Robot> {
     const result = await api.post(`/robots/add_robot/${bindCode}`, {});
-    notificationService.success('Robot added successfully');
+    notificationService.success('机器人添加成功');
     return result;
   }
 
-  async getRobots(filters: any = {}, page = 1, limit = 10): Promise<Array<Robot>> {
-    const params = {
-      page,
-      limit,
-      ...filters
-    };
-    return await api.get('/robots/list', { params });
+  async getRobots(): Promise<Array<Robot>> {
+    return await api.get('/robots/list');
   }
 
   async getRobotDetails(robotId: string): Promise<Robot> {
-    const robot = await api.get(`/robots/${robotId}`);
-    return robot;
+    return await api.get(`/robots/${robotId}`);
   }
 
-  async removeRobot(robotId: string): Promise<Robot> {
-    const robot = await api.delete(`/robots/remove/${robotId}`);
-    return robot;
+  async removeRobot(robotId: string): Promise<any> {
+    const result = await api.delete(`/robots/remove/${robotId}`);
+    notificationService.success('机器人删除成功');
+    return result;
   }
 
-  async installRobotApp(robotId: string, app_id: string): Promise<Robot> {
-    const robot = await api.put(`/robots/install_app/${robotId}/${app_id}`, {});
-    return robot;
+  async installRobotApp(robotId: string, appId: string): Promise<any> {
+    const result = await api.put(`/robots/install_app/${robotId}/${appId}`, {});
+    notificationService.success('应用安装成功');
+    return result;
   }
 
-  async runRobotApp(robotId: string, app_id: string): Promise<Robot> {
-    const robot = await api.put(`/robots/run_app/${robotId}/${app_id}`, {});
-    return robot;
+  async runRobotApp(robotId: string, appId: string): Promise<any> {
+    const result = await api.put(`/robots/run_app/${robotId}/${appId}`, {});
+    notificationService.success('应用运行成功');
+    return result;
   }
 
   async updateRobot(robotId: string, robotData: Partial<Robot>): Promise<Robot> {
     const result = await api.put(`/robots/update/${robotId}`, robotData);
-    notificationService.success('Robot updated successfully');
+    notificationService.success('机器人更新成功');
     return result;
   }
 
-  async getRobotStatus(robotId: string): Promise<RobotStatus> {
-    return await api.get(`/robots/${robotId}/status`);
-  }
-
-  async getRobotApplications(robotId: string): Promise<Application[]> {
-    return await api.get(`/robots/${robotId}/applications`);
-  }
-
-  async startApplication(robotId: string, applicationId: string): Promise<any> {
-    const result = await api.post(`/robots/${robotId}/applications/${applicationId}/start`, {});
-    notificationService.success('Application started successfully');
-    return result;
-  }
-
-  async stopApplication(robotId: string, applicationId: string): Promise<any> {
-    const result = await api.post(`/robots/${robotId}/applications/${applicationId}/stop`, {});
-    notificationService.success('Application stopped successfully');
-    return result;
-  }
-
-  async restartApplication(robotId: string, applicationId: string): Promise<any> {
-    const result = await api.post(`/robots/${robotId}/applications/${applicationId}/restart`, {});
-    notificationService.success('Application restarted successfully');
-    return result;
-  }
-
-  async getRobotLogs(
-    robotId: string,
-    filters: any = {},
-    page = 1,
-    limit = 100
-  ): Promise<PagedResult<Log>> {
-    const params = {
-      page,
-      limit,
-      ...filters
-    };
-    return await api.get(`/robots/${robotId}/logs`, { params });
-  }
-
-  async getApplicationLogs(
-    robotId: string,
-    applicationId: string,
-    filters: any = {},
-    page = 1,
-    limit = 100
-  ): Promise<PagedResult<Log>> {
-    const params = {
-      page,
-      limit,
-      ...filters
-    };
-    return await api.get(`/robots/${robotId}/applications/${applicationId}/logs`, { params });
-  }
-
-  async rebootRobot(robotId: string): Promise<any> {
-    const result = await api.post(`/robots/${robotId}/reboot`, {});
-    notificationService.success('Robot reboot initiated');
-    return result;
-  }
-
-  async getRobotTelemetry(
-    robotId: string,
-    metric: string,
-    timeRange: any = {}
-  ): Promise<TelemetryData[]> {
-    const params = {
-      metric,
-      ...timeRange
-    };
-    return await api.get(`/robots/${robotId}/telemetry`, { params });
-  }
-
-  async getRobotNetworkConfig(robotId: string): Promise<NetworkConfig> {
-    return await api.get(`/robots/${robotId}/network`);
-  }
-
-  async updateRobotNetworkConfig(
-    robotId: string,
-    networkConfig: Partial<NetworkConfig>
-  ): Promise<NetworkConfig> {
-    const result = await api.put(`/robots/${robotId}/network`, networkConfig);
-    notificationService.success('Network configuration updated successfully');
-    return result;
+  // 文件上传
+  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<string> {
+    const uploadService = await import('./upload.service');
+    return uploadService.default.uploadFile(file, onProgress);
   }
 }
 

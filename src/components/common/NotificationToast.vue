@@ -1,12 +1,20 @@
 <template>
-  <transition name="toast">
-    <div v-if="visible" class="notification-toast" :class="type">
+  <Transition name="toast" appear>
+    <div class="notification-toast" :class="type">
       <div class="toast-content">
-        <span class="message">{{ message }}</span>
-        <button class="close-btn" @click="close">×</button>
+        <div class="toast-icon">
+          <i v-if="type === 'success'" class="fas fa-check-circle"></i>
+          <i v-else-if="type === 'error'" class="fas fa-exclamation-circle"></i>
+          <i v-else-if="type === 'warning'" class="fas fa-exclamation-triangle"></i>
+          <i v-else class="fas fa-info-circle"></i>
+        </div>
+        <div class="toast-message">{{ message }}</div>
+        <button class="toast-close" @click="$emit('close')">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
     </div>
-  </transition>
+  </Transition>
 </template>
 
 <script>
@@ -20,42 +28,20 @@ export default {
     type: {
       type: String,
       default: 'info',
-      validator: value => ['info', 'success', 'warning', 'error'].includes(value)
+      validator: value => ['success', 'error', 'warning', 'info'].includes(value)
     },
     duration: {
       type: Number,
-      default: 5000
+      default: 3000 // 3 seconds
     }
   },
-  data() {
-    return {
-      visible: true,
-      timeout: null
-    };
-  },
+  emits: ['close'],
   mounted() {
-    this.startTimer();
-  },
-  beforeUnmount() {
-    this.clearTimer();
-  },
-  methods: {
-    startTimer() {
-      if (this.duration > 0) {
-        this.timeout = setTimeout(() => {
-          this.close();
-        }, this.duration);
-      }
-    },
-    clearTimer() {
-      if (this.timeout) {
-        clearTimeout(this.timeout);
-      }
-    },
-    close() {
-      this.visible = false;
-      this.clearTimer();
-      this.$emit('close');
+    // Auto-close after specified duration
+    if (this.duration > 0) {
+      setTimeout(() => {
+        this.$emit('close');
+      }, this.duration);
     }
   }
 };
@@ -64,53 +50,63 @@ export default {
 <style lang="scss" scoped>
 .notification-toast {
   position: fixed;
-  top: 20px;
+  top: 80px;
   right: 20px;
-  z-index: 9999;
   min-width: 300px;
-  max-width: 450px;
-  padding: 16px;
+  max-width: 500px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
-  &.info {
-    background-color: #2196f3;
-    color: white;
-  }
+  z-index: 9999;
 
   &.success {
-    background-color: #4caf50;
-    color: white;
-  }
-
-  &.warning {
-    background-color: #ff9800;
-    color: white;
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+    color: #155724;
   }
 
   &.error {
-    background-color: #f44336;
-    color: white;
+    background-color: #f8d7da;
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+  }
+
+  &.warning {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    color: #856404;
+  }
+
+  &.info {
+    background-color: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    color: #0c5460;
   }
 
   .toast-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    padding: 1rem;
+    gap: 0.75rem;
 
-    .message {
-      flex: 1;
-      margin-right: 12px;
+    .toast-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
     }
 
-    .close-btn {
+    .toast-message {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .toast-close {
       background: none;
       border: none;
-      color: white;
-      font-size: 20px;
       cursor: pointer;
-      padding: 0;
+      padding: 0.25rem;
+      border-radius: 4px;
+      color: inherit;
       opacity: 0.7;
+      transition: opacity 0.2s ease;
 
       &:hover {
         opacity: 1;
@@ -119,14 +115,28 @@ export default {
   }
 }
 
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s ease;
+// Transition animations
+.toast-enter-active {
+  transition: all 0.3s ease-out;
 }
 
-.toast-enter,
+.toast-leave-active {
+  transition: all 0.3s ease-in;
+}
+
+.toast-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
 .toast-leave-to {
   transform: translateX(100%);
   opacity: 0;
+}
+
+.toast-enter-to,
+.toast-leave-from {
+  transform: translateX(0);
+  opacity: 1;
 }
 </style>

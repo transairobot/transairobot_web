@@ -6,46 +6,14 @@ export class PagedResult<T> {
   constructor(public data: T[], public total: number, public page: number, public limit: number) {}
 }
 
-export class DeveloperApplication {
-  constructor(
-    public id: string,
-    public developerId: string,
-    public appName: string,
-    public status: 'pending' | 'approved' | 'rejected',
-    public createdAt: Date,
-    public updatedAt: Date
-  ) {}
-}
-
-export class ApplicationSubmission {
-  constructor(
-    public id: string,
-    public appId: string,
-    public appName: string,
-    public version: string,
-    public status: 'pending' | 'approved' | 'rejected',
-    public createdAt: Date,
-    public updatedAt: Date
-  ) {}
-}
-
 export class User {
   constructor(
     public id: string,
     public nickname: string,
     public email: string,
-    public role: 'user' | 'developer' | 'admin',
+    public role: 'user' | 'admin',
     public isDisabled: boolean,
     public createdAt: Date
-  ) {}
-}
-
-export class RegisterReq {
-  constructor(
-    public email: string,
-    public password: string,
-    public nickname: string,
-    public verify_code: string
   ) {}
 }
 
@@ -53,8 +21,7 @@ export class SystemAnalytics {
   constructor(
     public totalUsers: number,
     public totalApplications: number,
-    public totalRobots: number,
-    public totalRevenue: number
+    public totalRobots: number
   ) {}
 }
 
@@ -62,94 +29,32 @@ export class TimeSeriesData {
   constructor(public date: Date, public value: number) {}
 }
 
-export class Log {
+export class Application {
   constructor(
     public id: string,
-    public level: string,
-    public message: string,
-    public timestamp: Date
+    public name: string,
+    public description: string,
+    public categoryId: string,
+    public version: string,
+    public iconUrl: string,
+    public screenshots: string[],
+    public status: 'active' | 'inactive',
+    public createdAt: Date,
+    public updatedAt: Date
   ) {}
 }
 
-export class SystemSettings {
-  constructor(public settingKey: string, public settingValue: any) {}
+export class Category {
+  constructor(
+    public id: string,
+    public name: string,
+    public description: string,
+    public iconUrl: string
+  ) {}
 }
 
 class AdminService {
-  async getPendingDeveloperApplications(
-    filters: any = {},
-    page = 1,
-    limit = 10
-  ): Promise<PagedResult<DeveloperApplication>> {
-    const params = {
-      page,
-      limit,
-      status: 'pending',
-      ...filters
-    };
-    return await api.get('/admin/developer-applications', { params });
-  }
-
-  async approveDeveloperApplication(applicationId: string, approvalData: any = {}): Promise<any> {
-    const result = await api.post(
-      `/admin/developer-applications/${applicationId}/approve`,
-      approvalData
-    );
-    notificationService.success('Developer application approved successfully');
-    return result;
-  }
-
-  async rejectDeveloperApplication(
-    applicationId: string,
-    rejectionData: { reason: string }
-  ): Promise<any> {
-    const result = await api.post(
-      `/admin/developer-applications/${applicationId}/reject`,
-      rejectionData
-    );
-    notificationService.success('Developer application rejected');
-    return result;
-  }
-
-  async getPendingApplicationSubmissions(
-    filters: any = {},
-    page = 1,
-    limit = 10
-  ): Promise<PagedResult<ApplicationSubmission>> {
-    const params = {
-      page,
-      limit,
-      status: 'pending',
-      ...filters
-    };
-    return await api.get('/admin/application-submissions', { params });
-  }
-
-  async getApplicationSubmissionDetails(submissionId: string): Promise<ApplicationSubmission> {
-    return await api.get(`/admin/application-submissions/${submissionId}`);
-  }
-
-  async approveApplicationSubmission(submissionId: string, approvalData: any = {}): Promise<any> {
-    const result = await api.post(
-      `/admin/application-submissions/${submissionId}/approve`,
-      approvalData
-    );
-    notificationService.success('Application submission approved successfully');
-    return result;
-  }
-
-  async rejectApplicationSubmission(
-    submissionId: string,
-    rejectionData: { reason: string }
-  ): Promise<any> {
-    const result = await api.post(
-      `/admin/application-submissions/${submissionId}/reject`,
-      rejectionData
-    );
-    notificationService.success('Application submission rejected');
-    return result;
-  }
-
+  // 用户管理
   async getUsers(filters: any = {}, page = 1, limit = 10): Promise<PagedResult<User>> {
     const params = {
       page,
@@ -165,73 +70,119 @@ class AdminService {
 
   async updateUser(userId: string, userData: Partial<User>): Promise<User> {
     const result = await api.put(`/admin/users/${userId}`, userData);
-    notificationService.success('User updated successfully');
+    notificationService.success('用户更新成功');
     return result;
   }
 
-  async disableUser(userId: string, disableData: { reason: string }): Promise<any> {
-    const result = await api.post(`/admin/users/${userId}/disable`, disableData);
-    notificationService.success('User disabled successfully');
+  async disableUser(userId: string): Promise<any> {
+    const result = await api.post(`/admin/users/${userId}/disable`, {});
+    notificationService.success('用户已禁用');
     return result;
   }
 
   async enableUser(userId: string): Promise<any> {
     const result = await api.post(`/admin/users/${userId}/enable`, {});
-    notificationService.success('User enabled successfully');
+    notificationService.success('用户已启用');
     return result;
   }
 
-  async getSystemAnalytics(timeRange: any = {}): Promise<SystemAnalytics> {
-    const params = { ...timeRange };
-    return await api.get('/admin/analytics/system', { params });
+  // 数据分析
+  async getSystemAnalytics(): Promise<SystemAnalytics> {
+    return await api.get('/admin/analysis/system');
   }
 
   async getUserAnalytics(timeRange: any = {}): Promise<TimeSeriesData[]> {
     const params = { ...timeRange };
-    return await api.get('/admin/analytics/users', { params });
+    return await api.get('/admin/analysis/users', { params });
   }
 
   async getApplicationAnalytics(timeRange: any = {}): Promise<TimeSeriesData[]> {
     const params = { ...timeRange };
-    return await api.get('/admin/analytics/applications', { params });
+    return await api.get('/admin/analysis/applications', { params });
   }
 
   async getRobotAnalytics(timeRange: any = {}): Promise<TimeSeriesData[]> {
     const params = { ...timeRange };
-    return await api.get('/admin/analytics/robots', { params });
+    return await api.get('/admin/analysis/robots', { params });
   }
 
-  async getRevenueAnalytics(timeRange: any = {}): Promise<TimeSeriesData[]> {
-    const params = { ...timeRange };
-    return await api.get('/admin/analytics/revenue', { params });
+  // 应用管理
+  async getApplicationsForAdmin(
+    params: { page?: number; limit?: number; name?: string } = {}
+  ): Promise<any> {
+    return await api.get('/admin/applications', { params });
   }
 
-  async getSystemLogs(filters: any = {}, page = 1, limit = 100): Promise<PagedResult<Log>> {
-    const params = {
-      page,
-      limit,
-      ...filters
-    };
-    return await api.get('/admin/logs/system', { params });
+  async getFeaturedApplicationsForAdmin(
+    params: { page?: number; limit?: number; name?: string } = {}
+  ): Promise<any> {
+    return await api.get('/admin/applications/feature/list', { params });
   }
 
-  async getAuditLogs(filters: any = {}, page = 1, limit = 100): Promise<PagedResult<Log>> {
-    const params = {
-      page,
-      limit,
-      ...filters
-    };
-    return await api.get('/admin/logs/audit', { params });
-  }
-
-  async getSystemSettings(): Promise<SystemSettings[]> {
-    return await api.get('/admin/settings');
-  }
-
-  async updateSystemSettings(settings: SystemSettings[]): Promise<SystemSettings[]> {
-    const result = await api.put('/admin/settings', settings);
-    notificationService.success('System settings updated successfully');
+  async createApplication(applicationData: any): Promise<Application> {
+    const result = await api.post('/admin/applications', applicationData);
+    notificationService.success('应用创建成功');
     return result;
+  }
+
+  async updateApplication(appId: string, applicationData: any): Promise<Application> {
+    const result = await api.put(`/admin/applications/${appId}`, applicationData);
+    notificationService.success('应用更新成功');
+    return result;
+  }
+
+  async deleteApplication(appId: string): Promise<any> {
+    const result = await api.delete(`/admin/applications/${appId}`);
+    notificationService.success('应用删除成功');
+    return result;
+  }
+
+  async createApplicationScreenshot(appId: string, screenshotData: any): Promise<any> {
+    const result = await api.post(`/admin/applications/${appId}/screenshot`, screenshotData);
+    notificationService.success('应用截图创建成功');
+    return result;
+  }
+
+  // 应用推荐功能
+  async featureApplication(appId: string): Promise<any> {
+    const result = await api.post(`/admin/applications/${appId}/feature?feature=feature`, {});
+    notificationService.success('应用已设为推荐');
+    return result;
+  }
+
+  async unfeatureApplication(appId: string): Promise<any> {
+    const result = await api.post(`/admin/applications/${appId}/feature?feature=unfeature`, {});
+    notificationService.success('应用已取消推荐');
+    return result;
+  }
+
+  // 分类管理
+  async getCategories(): Promise<Category[]> {
+    return await api.get('/applications/categories');
+  }
+
+  async createCategory(categoryData: any): Promise<Category> {
+    const result = await api.post('/admin/categories', categoryData);
+    notificationService.success('分类创建成功');
+    return result;
+  }
+
+  async updateCategory(categoryId: string, categoryData: any): Promise<Category> {
+    const result = await api.put(`/admin/categories/${categoryId}`, categoryData);
+    notificationService.success('分类更新成功');
+    return result;
+  }
+
+  async deleteCategory(categoryId: string): Promise<any> {
+    const result = await api.delete(`/admin/categories/${categoryId}`);
+    notificationService.success('分类删除成功');
+    return result;
+  }
+
+  // 文件上传
+  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<string> {
+    const uploadService = await import('./upload.service');
+    return uploadService.default.uploadFile(file, onProgress);
   }
 }
 

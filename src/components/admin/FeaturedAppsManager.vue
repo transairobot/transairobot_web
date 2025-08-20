@@ -15,8 +15,13 @@
     </div>
 
     <div class="app-list">
-      <LoadingState v-if="loading" />
-      <ErrorState v-else-if="error" :message="error" @retry="fetchApps" />
+      <div v-if="loading" class="loading-state">
+        <p>Loading applications...</p>
+      </div>
+      <div v-else-if="error" class="error-state">
+        <p>{{ error }}</p>
+        <button @click="fetchApps">Retry</button>
+      </div>
 
       <div v-else-if="filteredApps.length === 0" class="empty-state">
         <p>No applications found</p>
@@ -30,12 +35,12 @@
           :class="{ featured: app.featured }"
         >
           <div class="app-icon">
-            <img :src="app.icon" :alt="app.name + ' icon'" />
+            <img :src="app.iconUrl || '/assets/icons/default-app.png'" :alt="app.name + ' icon'" />
           </div>
           <div class="app-info">
             <h3>{{ app.name }}</h3>
-            <p class="developer">By {{ app.developer }}</p>
-            <p class="status">Status: {{ app.status }}</p>
+            <p class="category">Category: {{ app.category }}</p>
+            <p class="status">Status: {{ app.status || 'active' }}</p>
           </div>
           <div class="app-actions">
             <button @click="toggleFeature(app)" :class="{ 'featured-btn': app.featured }">
@@ -49,23 +54,20 @@
 </template>
 
 <script>
-// import { mapState, mapActions } from 'vuex';
-import LoadingState from '../common/LoadingState.vue';
-import ErrorState from '../common/ErrorState.vue';
+import { applicationStoreService, adminService } from '@/services';
 
 export default {
   name: 'FeaturedAppsManager',
-  components: {
-    LoadingState,
-    ErrorState
-  },
+  emits: ['show-notification'],
   data() {
     return {
       searchQuery: '',
       apps: [],
       filteredApps: [],
+      categories: [],
       loading: false,
-      error: null
+      error: null,
+      searchTimeout: null // 添加防抖定时器
     };
   },
   methods: {
@@ -74,73 +76,76 @@ export default {
       this.error = null;
 
       try {
-        // In a real app, this would be an API call
-        // For now, we'll use mock data
-        setTimeout(() => {
-          this.apps = [
-            {
-              id: '1',
-              name: 'Navigation Assistant',
-              icon: '/assets/icons/navigation.png',
-              developer: 'RoboTech Inc.',
-              status: 'approved',
-              featured: true
-            },
-            {
-              id: '2',
-              name: 'Voice Commander',
-              icon: '/assets/icons/voice.png',
-              developer: 'AI Solutions',
-              status: 'approved',
-              featured: false
-            },
-            {
-              id: '3',
-              name: 'Environment Scanner',
-              icon: '/assets/icons/scanner.png',
-              developer: 'Sensor Systems',
-              status: 'approved',
-              featured: true
-            },
-            {
-              id: '6',
-              name: 'Path Optimizer',
-              icon: '/assets/icons/path.png',
-              developer: 'RoboTech Inc.',
-              status: 'approved',
-              featured: false
-            }
-          ];
+        const result = await adminService.getFeaturedApplicationsForAdmin({
+          page: 1,
+          limit: 100,
+          name: this.searchQuery || undefined
+        });
 
-          this.filteredApps = [...this.apps];
-          this.loading = false;
-        }, 500);
+        let appsData = [];
+
+        // 处理标准格式: {code: 0, message: "", data: [...]}
+        if (result && result.data && Array.isArray(result.data)) {
+          appsData = result.data;
+        }
+        // 处理直接数组格式: [...]
+        else if (Array.isArray(result)) {
+          appsData = result;
+        }
+        // 处理异常格式: {0: {...}, 1: {...}} (零值字段被过滤的情况)
+        else if (result && typeof result === 'object') {
+          // 检查是否是 {0: {...}, 1: {...}} 这种格式
+          const keys = Object.keys(result);
+          const isIndexedObject = keys.every(key => /^\d+$/.test(key));
+
+          if (isIndexedObject) {
+            appsData = Object.values(result);
+          } else {
+            appsData = [];
+          }
+        } else {
+          appsData = [];
+        }
+
+        this.apps = appsData.map(app => ({
+          ...app,
+          featured: app.isFeatured // 将 isFeatured 映射为 featured
+        }));
+
+        this.filteredApps = [...this.apps];
       } catch (error) {
         console.error('Error fetching apps:', error);
         this.error = 'Failed to load applications';
+        this.apps = [];
+        this.filteredApps = [];
+      } finally {
         this.loading = false;
       }
     },
+
     searchApps() {
-      if (!this.searchQuery.trim()) {
-        this.filteredApps = [...this.apps];
-        return;
+      // 清除之前的定时器
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
       }
 
-      const query = this.searchQuery.toLowerCase();
-      this.filteredApps = this.apps.filter(
-        app => app.name.toLowerCase().includes(query) || app.developer.toLowerCase().includes(query)
-      );
+      // 设置新的定时器，500ms后执行搜索
+      this.searchTimeout = setTimeout(() => {
+        this.fetchApps();
+      }, 500);
     },
+
     async toggleFeature(app) {
       try {
-        // In a real app, this would be an API call
-        // For now, we'll just update the local state
-        app.featured = !app.featured;
+        // 调用真实的API
+        if (app.featured) {
+          await adminService.unfeatureApplication(app.id);
+        } else {
+          await adminService.featureApplication(app.id);
+        }
 
-        // Simulate API call
-        // const adminService = await import('../../services/admin.service');
-        // adminService.featureApplication(app.id, app.featured);
+        // 更新本地状态
+        app.featured = !app.featured;
 
         this.$emit('show-notification', {
           type: 'success',
@@ -151,9 +156,6 @@ export default {
       } catch (error) {
         console.error('Error toggling feature status:', error);
 
-        // Revert the change
-        app.featured = !app.featured;
-
         this.$emit('show-notification', {
           type: 'error',
           message: 'Failed to update feature status'
@@ -163,6 +165,12 @@ export default {
   },
   created() {
     this.fetchApps();
+  },
+  beforeUnmount() {
+    // 清理定时器，防止内存泄漏
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
   }
 };
 </script>
@@ -170,10 +178,11 @@ export default {
 <style lang="scss" scoped>
 .featured-apps-manager {
   .section-header {
-    margin-bottom: $spacing-lg;
+    margin-bottom: 1.5rem;
 
     h2 {
-      margin: 0 0 $spacing-xs 0;
+      margin: 0 0 0.5rem 0;
+      color: var(--text-primary);
     }
 
     p {
@@ -183,56 +192,70 @@ export default {
   }
 
   .search-bar {
-    margin-bottom: $spacing-lg;
+    margin-bottom: 1.5rem;
 
     input {
       width: 100%;
-      padding: $spacing-md;
+      padding: 0.75rem;
       border-radius: 4px;
       border: 1px solid var(--border-color);
-      background-color: var(--bg-secondary);
+      background-color: var(--card-bg);
       color: var(--text-primary);
       font-size: 1rem;
 
       &:focus {
         outline: none;
-        border-color: var(--accent-primary);
+        border-color: #007bff;
       }
     }
   }
 
   .app-list {
+    .loading-state,
+    .error-state,
     .empty-state {
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 200px;
       color: var(--text-secondary);
+
+      button {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
     }
 
     .app-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: $spacing-lg;
+      gap: 1.5rem;
 
       .app-card {
         display: flex;
         flex-direction: column;
-        padding: $spacing-lg;
-        background-color: var(--bg-secondary);
+        padding: 1.5rem;
+        background-color: var(--card-bg);
         border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         transition: all 0.2s ease;
         position: relative;
 
         &.featured {
-          border: 2px solid var(--accent-secondary);
+          border: 2px solid #28a745;
 
           &::before {
             content: 'Featured';
             position: absolute;
             top: 10px;
             right: 10px;
-            background-color: var(--accent-secondary);
+            background-color: #28a745;
             color: white;
             padding: 2px 8px;
             border-radius: 4px;
@@ -244,7 +267,7 @@ export default {
         .app-icon {
           width: 60px;
           height: 60px;
-          margin-bottom: $spacing-md;
+          margin-bottom: 1rem;
 
           img {
             width: 100%;
@@ -258,11 +281,12 @@ export default {
           flex: 1;
 
           h3 {
-            margin: 0 0 $spacing-xs 0;
+            margin: 0 0 0.5rem 0;
+            color: var(--text-primary);
           }
 
           p {
-            margin: 0 0 $spacing-xs 0;
+            margin: 0 0 0.5rem 0;
             color: var(--text-secondary);
             font-size: 0.9rem;
           }
@@ -274,29 +298,29 @@ export default {
         }
 
         .app-actions {
-          margin-top: $spacing-md;
+          margin-top: 1rem;
 
           button {
             width: 100%;
-            padding: $spacing-sm $spacing-md;
+            padding: 0.5rem 1rem;
             border-radius: 4px;
             cursor: pointer;
             font-weight: 500;
-            background-color: var(--bg-primary);
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             transition: all 0.2s ease;
 
             &:hover {
-              background-color: var(--bg-secondary);
+              background-color: #f8f9fa;
             }
 
             &.featured-btn {
-              background-color: var(--accent-secondary);
+              background-color: #28a745;
               color: white;
               border: none;
 
               &:hover {
-                background-color: var(--accent-secondary-dark);
+                background-color: #218838;
               }
             }
           }

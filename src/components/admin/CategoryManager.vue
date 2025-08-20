@@ -37,16 +37,21 @@
 
         <div class="form-actions">
           <button type="button" class="cancel-btn" @click="cancelCategoryForm">Cancel</button>
-          <button type="submit" class="save-btn">
-            {{ editingCategory ? 'Update Category' : 'Create Category' }}
+          <button type="submit" class="save-btn" :disabled="saving">
+            {{ saving ? 'Saving...' : editingCategory ? 'Update Category' : 'Create Category' }}
           </button>
         </div>
       </form>
     </div>
 
     <div class="category-list">
-      <LoadingState v-if="loading" />
-      <ErrorState v-else-if="error" :message="error" @retry="fetchCategories" />
+      <div v-if="loading" class="loading-state">
+        <p>Loading categories...</p>
+      </div>
+      <div v-else-if="error" class="error-state">
+        <p>{{ error }}</p>
+        <button @click="fetchCategories">Retry</button>
+      </div>
 
       <div v-else-if="categories.length === 0" class="empty-state">
         <p>No categories found</p>
@@ -66,11 +71,9 @@
               <td>{{ category.name }}</td>
               <td>{{ category.count || 0 }}</td>
               <td class="actions">
-                <button class="edit-btn" @click="editCategory(category)">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="delete-btn" @click="confirmDeleteCategory(category)">
-                  <i class="fas fa-trash"></i>
+                <button class="edit-btn" @click="editCategory(category)" title="Edit">✏️</button>
+                <button class="delete-btn" @click="confirmDeleteCategory(category)" title="Delete">
+                  🗑️
                 </button>
               </td>
             </tr>
@@ -95,40 +98,63 @@
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex';
-import LoadingState from '../common/LoadingState.vue';
-import ErrorState from '../common/ErrorState.vue';
+import { adminService } from '@/services';
 
 export default {
   name: 'CategoryManager',
-  components: {
-    LoadingState,
-    ErrorState
-  },
   data() {
     return {
+      categories: [],
+      loading: false,
+      error: null,
       showAddCategoryForm: false,
       editingCategory: null,
       categoryForm: {
         name: '',
         description: ''
       },
+      saving: false,
       showDeleteConfirmation: false,
-      categoryToDelete: null,
-      loading: false,
-      error: null
+      categoryToDelete: null
     };
   },
-  computed: {
-    ...mapState('admin', ['categories'])
-  },
   methods: {
-    ...mapActions('admin', [
-      'fetchCategories',
-      'createCategory',
-      'updateCategory',
-      'deleteCategory'
-    ]),
+    async fetchCategories() {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const result = await adminService.getCategories();
+        // The API service already extracts the data from the response
+        // Handle different possible data structures
+        let categories = [];
+        if (Array.isArray(result)) {
+          categories = result;
+        } else if (result && Array.isArray(result.data)) {
+          categories = result.data;
+        } else if (result && typeof result === 'object') {
+          categories = Object.values(result);
+        } else {
+          console.log('Unexpected result structure:', result);
+        }
+
+        // Ensure each category has the required properties
+        this.categories = categories.map(category => ({
+          id: category.id || category._id,
+          name: category.name || 'Unnamed Category',
+          description: category.description || '',
+          count: category.count || category.appCount || 0
+        }));
+
+        // Force a re-render
+        this.$forceUpdate();
+      } catch (error) {
+        this.error = 'Failed to load categories';
+        this.categories = [];
+      } finally {
+        this.loading = false;
+      }
+    },
 
     editCategory(category) {
       this.editingCategory = category;
@@ -149,42 +175,21 @@ export default {
     },
 
     async saveCategory() {
+      this.saving = true;
+
       try {
         if (this.editingCategory) {
-          // Update existing category
-          await this.updateCategory({
-            categoryId: this.editingCategory.id,
-            categoryData: this.categoryForm
-          });
-
-          this.$emit('show-notification', {
-            type: 'success',
-            message: `Category "${this.categoryForm.name}" updated successfully`
-          });
+          await adminService.updateCategory(this.editingCategory.id, this.categoryForm);
         } else {
-          // Create new category
-          const result = await this.createCategory(this.categoryForm);
-
-          if (result.success) {
-            this.$emit('show-notification', {
-              type: 'success',
-              message: `Category "${this.categoryForm.name}" created successfully`
-            });
-          }
+          await adminService.createCategory(this.categoryForm);
         }
 
-        // Reset form
         this.cancelCategoryForm();
-
-        // Refresh categories
         this.fetchCategories();
       } catch (error) {
         console.error('Error saving category:', error);
-
-        this.$emit('show-notification', {
-          type: 'error',
-          message: `Failed to ${this.editingCategory ? 'update' : 'create'} category`
-        });
+      } finally {
+        this.saving = false;
       }
     },
 
@@ -197,22 +202,10 @@ export default {
       if (!this.categoryToDelete) return;
 
       try {
-        await this.deleteCategory(this.categoryToDelete.id);
-
-        this.$emit('show-notification', {
-          type: 'success',
-          message: `Category "${this.categoryToDelete.name}" deleted successfully`
-        });
-
-        // Refresh categories
+        await adminService.deleteCategory(this.categoryToDelete.id);
         this.fetchCategories();
       } catch (error) {
         console.error('Error deleting category:', error);
-
-        this.$emit('show-notification', {
-          type: 'error',
-          message: `Failed to delete category "${this.categoryToDelete.name}"`
-        });
       } finally {
         this.showDeleteConfirmation = false;
         this.categoryToDelete = null;
@@ -226,12 +219,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/styles/variables.scss';
+
 .category-manager {
   .section-header {
     margin-bottom: $spacing-lg;
 
     h2 {
       margin: 0 0 $spacing-xs 0;
+      color: var(--text-primary);
     }
 
     p {
@@ -256,7 +252,7 @@ export default {
       gap: $spacing-xs;
 
       &:hover {
-        background-color: var(--accent-primary-dark, #1ccb97ff);
+        background-color: var(--accent-primary-dark);
       }
 
       i {
@@ -274,6 +270,7 @@ export default {
     h3 {
       margin-top: 0;
       margin-bottom: $spacing-md;
+      color: var(--text-primary);
     }
 
     .form-group {
@@ -283,6 +280,7 @@ export default {
         display: block;
         margin-bottom: $spacing-xs;
         font-weight: 500;
+        color: var(--text-primary);
       }
 
       input,
@@ -291,8 +289,8 @@ export default {
         padding: $spacing-sm;
         border-radius: 4px;
         border: 1px solid var(--border-color);
-        background-color: var(--bg-primary);
-        color: var(--text-primary);
+        background-color: var(--input-bg);
+        color: var(--input-text);
         font-size: 1rem;
 
         &:focus {
@@ -319,6 +317,7 @@ export default {
 
         &.cancel-btn {
           background-color: transparent;
+          color: var(--text-secondary);
           border: 1px solid var(--border-color);
 
           &:hover {
@@ -332,7 +331,12 @@ export default {
           border: none;
 
           &:hover {
-            background-color: var(--accent-primary-dark, #1ccb97ff);
+            background-color: var(--accent-primary-dark);
+          }
+
+          &:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
           }
         }
       }
@@ -340,15 +344,37 @@ export default {
   }
 
   .category-list {
+    .loading-state,
+    .error-state,
     .empty-state {
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 200px;
       color: var(--text-secondary);
+
+      button {
+        margin-top: $spacing-md;
+        padding: $spacing-sm $spacing-md;
+        background: var(--accent-primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+
+        &:hover {
+          background: var(--accent-primary-dark);
+        }
+      }
     }
 
     .categories-table {
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+
       table {
         width: 100%;
         border-collapse: collapse;
@@ -363,6 +389,11 @@ export default {
         th {
           font-weight: 600;
           color: var(--text-secondary);
+          background-color: var(--bg-secondary);
+        }
+
+        td {
+          color: var(--text-primary);
         }
 
         td.actions {
@@ -417,7 +448,7 @@ export default {
     z-index: 1000;
 
     .modal-content {
-      background-color: var(--bg-primary);
+      background-color: var(--card-bg);
       padding: $spacing-lg;
       border-radius: 8px;
       width: 100%;
@@ -426,10 +457,12 @@ export default {
       h3 {
         margin-top: 0;
         margin-bottom: $spacing-md;
+        color: var(--text-primary);
       }
 
       p {
         margin-bottom: $spacing-md;
+        color: var(--text-primary);
       }
 
       .warning {
@@ -450,6 +483,7 @@ export default {
 
           &.cancel-btn {
             background-color: transparent;
+            color: var(--text-secondary);
             border: 1px solid var(--border-color);
 
             &:hover {
@@ -463,7 +497,7 @@ export default {
             border: none;
 
             &:hover {
-              background-color: var(--danger-dark);
+              background-color: var(--error);
             }
           }
         }

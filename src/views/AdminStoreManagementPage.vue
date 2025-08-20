@@ -13,6 +13,9 @@
           >
             Featured Apps
           </div>
+          <div class="tab" :class="{ active: activeTab === 'apps' }" @click="activeTab = 'apps'">
+            Apps
+          </div>
           <div
             class="tab"
             :class="{ active: activeTab === 'categories' }"
@@ -20,26 +23,16 @@
           >
             Categories
           </div>
-          <div class="tab" :class="{ active: activeTab === 'bulk' }" @click="activeTab = 'bulk'">
-            Bulk Actions
-          </div>
         </div>
 
         <div class="tab-content">
           <FeaturedAppsManager v-if="activeTab === 'featured'" />
+          <AppsManager v-else-if="activeTab === 'apps'" />
           <CategoryManager v-else-if="activeTab === 'categories'" />
-          <BulkActionsManager v-else-if="activeTab === 'bulk'" />
         </div>
       </div>
     </main>
     <AppFooter />
-
-    <NotificationToast
-      v-if="notification"
-      :message="notification.message"
-      :type="notification.type"
-      @close="notification = null"
-    />
   </div>
 </template>
 
@@ -47,9 +40,8 @@
 import AppHeader from '../components/common/AppHeader.vue';
 import AppFooter from '../components/common/AppFooter.vue';
 import FeaturedAppsManager from '../components/admin/FeaturedAppsManager.vue';
+import AppsManager from '../components/admin/AppsManager.vue';
 import CategoryManager from '../components/admin/CategoryManager.vue';
-import BulkActionsManager from '../components/admin/BulkActionsManager.vue';
-import NotificationToast from '../components/common/NotificationToast.vue';
 
 export default {
   name: 'AdminStoreManagementPage',
@@ -57,32 +49,20 @@ export default {
     AppHeader,
     AppFooter,
     FeaturedAppsManager,
-    CategoryManager,
-    BulkActionsManager,
-    NotificationToast
+    AppsManager,
+    CategoryManager
   },
   data() {
     return {
-      activeTab: 'featured',
-      notification: null
+      activeTab: 'featured'
     };
-  },
-  methods: {
-    showNotification(notification) {
-      this.notification = notification;
-
-      // Auto-dismiss after 5 seconds
-      setTimeout(() => {
-        if (this.notification === notification) {
-          this.notification = null;
-        }
-      }, 5000);
-    }
   }
 };
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/styles/variables.scss';
+
 .admin-store-management-page {
   min-height: 100vh;
   display: flex;
@@ -90,7 +70,7 @@ export default {
 
   main {
     flex: 1;
-    padding: $spacing-2xl 0;
+    padding: $spacing-xl 0;
 
     .container {
       max-width: 1200px;
@@ -99,6 +79,7 @@ export default {
 
       h1 {
         margin-bottom: $spacing-xl;
+        color: var(--text-primary);
       }
     }
   }
