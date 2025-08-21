@@ -128,7 +128,6 @@ const fetchCategories = async () => {
 
   try {
     const response = await applicationStoreService.getCategories();
-    console.log('Categories response:', response);
 
     // 处理不同的响应格式
     let categoryList = response;
@@ -157,8 +156,6 @@ const fetchCategories = async () => {
       { id: 'all', name: 'All', description: 'All categories' },
       ...apiCategories
     ];
-
-    console.log('Categories loaded:', categories.value);
   } catch (err) {
     console.error('Failed to fetch categories:', err);
     categoriesError.value = 'Failed to load categories';

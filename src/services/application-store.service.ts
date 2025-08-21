@@ -12,6 +12,7 @@ export class Application {
     public version: string,
     public rating: number,
     public iconUrl: string,
+    public author: string,
     public createdAt: Date,
     public updatedAt: Date
   ) {}

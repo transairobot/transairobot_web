@@ -20,7 +20,7 @@
           <template #default="{ item }">
             <AppGrid columns="3" gap="normal">
               <AppGridItem v-for="(app, appIndex) in item" :key="appIndex">
-                <div class="app-card">
+                <div class="app-card" @click="navigateToApp(app)" :style="{ cursor: 'pointer' }">
                   <div class="app-icon">
                     <img
                       v-if="app.icon && app.icon.startsWith('http')"
@@ -206,13 +206,16 @@ export default {
     await this.fetchFeaturedApps();
   },
   methods: {
+    navigateToApp(app) {
+      this.$router.push(`/app/${app.id}`);
+    },
+
     async fetchFeaturedApps() {
       this.loading = true;
       this.error = null;
 
       try {
         const response = await applicationStoreService.getFeaturedApplications();
-        console.log('Featured apps response:', response);
 
         // Handle different response formats
         let apps = response;
@@ -242,7 +245,7 @@ export default {
 
         // If no apps are returned, don't show error - just show empty state
         if (this.featuredApps.length === 0) {
-          console.log('No featured applications found');
+          // No featured applications found - this is normal
         }
       } catch (error) {
         console.error('Failed to fetch featured applications:', error);
@@ -298,6 +301,12 @@ export default {
   justify-content: center;
   min-height: 220px; // 设置最小高度，让卡片更饱满
   height: 90%; /* Ensure card takes full height of grid item */
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  }
 
   &::before {
     content: '';

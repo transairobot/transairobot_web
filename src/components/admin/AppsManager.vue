@@ -6,9 +6,9 @@
     </div>
 
     <div class="app-actions">
-      <button class="add-app-btn" @click="openAddAppForm">
-        <i class="fas fa-plus"></i> Add New Application
-      </button>
+      <router-link to="/admin/applications/create?from=apps" class="add-app-btn">
+        <i class="fas fa-plus"></i> Add Application
+      </router-link>
     </div>
 
     <div class="search-bar">
@@ -37,7 +37,7 @@
               <th>Name</th>
               <th>Category</th>
               <th>Version</th>
-              <th>Status</th>
+              <th>Downloads</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -67,12 +67,25 @@
               </td>
               <td>{{ app.version }}</td>
               <td>
-                <span class="status-badge" :class="app.status || 'active'">
-                  {{ app.status || 'active' }}
+                <span class="downloads-count">
+                  {{ formatDownloads(app.downloads || 0) }}
                 </span>
               </td>
               <td class="actions">
-                <button class="edit-btn" @click="editApp(app)" title="Edit">✏️</button>
+                <router-link
+                  :to="`/admin/applications/edit/${app.id}?from=apps`"
+                  class="edit-btn"
+                  title="Edit"
+                >
+                  ✏️
+                </router-link>
+                <button
+                  class="screenshots-btn"
+                  @click="manageScreenshots(app)"
+                  title="Manage Screenshots"
+                >
+                  📷
+                </button>
                 <button class="delete-btn" @click="confirmDeleteApp(app)" title="Delete">🗑️</button>
               </td>
             </tr>
@@ -119,112 +132,68 @@
       </div>
     </div>
 
-    <!-- Add/Edit App Form -->
-    <div class="modal" v-if="showAddAppForm || editingApp">
-      <div class="modal-content">
+    <!-- Screenshots Management Modal -->
+    <div class="modal" v-if="showScreenshotsModal">
+      <div class="modal-content screenshots-modal">
         <div class="modal-header">
-          <h3>{{ editingApp ? 'Edit Application' : 'Add New Application' }}</h3>
-          <button class="close-btn" @click="cancelAppForm">×</button>
+          <h3>Manage Screenshots - {{ screenshotsApp?.name }}</h3>
+          <button class="close-btn" @click="closeScreenshotsModal">×</button>
         </div>
         <div class="modal-body">
-          <form @submit.prevent="saveApp">
-            <div class="form-group">
-              <label for="appName">Application Name</label>
-              <input
-                type="text"
-                id="appName"
-                v-model="appForm.name"
-                placeholder="Enter application name"
-                required
-              />
-            </div>
+          <!-- Upload Section at Top -->
+          <div class="upload-section">
+            <h4>Add New Screenshots</h4>
+            <FileUpload
+              ref="screenshotUpload"
+              accept="image/*"
+              :multiple="true"
+              hint="Supports JPG, PNG formats. You can upload multiple screenshots at once."
+              @upload-success="handleScreenshotUpload"
+            />
+          </div>
 
-            <div class="form-group">
-              <label for="appDescription">Description</label>
-              <textarea
-                id="appDescription"
-                v-model="appForm.description"
-                placeholder="Enter application description"
-                rows="3"
-                required
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="appCategory">Categories</label>
-              <div class="category-selection">
-                <div
-                  class="selected-categories"
-                  v-if="appForm.categoryIds && appForm.categoryIds.length > 0"
-                >
-                  <span
-                    v-for="categoryId in appForm.categoryIds"
-                    :key="categoryId"
-                    class="category-tag"
+          <!-- Current Screenshots Section at Bottom -->
+          <div class="screenshots-section">
+            <h4>Uploaded Screenshots</h4>
+            <div class="screenshots-grid" v-if="screenshots.length > 0">
+              <div v-for="(screenshot, index) in screenshots" :key="index" class="screenshot-item">
+                <img
+                  :src="screenshot.previewUrl || screenshot.uri"
+                  :alt="screenshot.caption"
+                  class="screenshot-image"
+                />
+                <div class="screenshot-info">
+                  <input
+                    v-model="screenshot.caption"
+                    placeholder="Enter caption..."
+                    class="caption-input"
+                  />
+                  <button
+                    class="remove-screenshot-btn"
+                    @click="removeScreenshot(index)"
+                    title="Remove screenshot"
                   >
-                    {{ getCategoryName(categoryId) }}
-                    <button
-                      type="button"
-                      class="remove-category"
-                      @click="removeCategory(categoryId)"
-                      title="Remove category"
-                    >
-                      ×
-                    </button>
-                  </span>
+                    🗑️
+                  </button>
                 </div>
-                <select
-                  id="appCategory"
-                  v-model="selectedCategoryToAdd"
-                  @change="addCategory"
-                  :disabled="categoriesLoading"
-                  class="category-selector"
-                >
-                  <option value="">
-                    {{ categoriesLoading ? 'Loading categories...' : 'Select a category to add' }}
-                  </option>
-                  <option
-                    v-for="category in availableCategories"
-                    :key="category.id"
-                    :value="category.id"
-                  >
-                    {{ category.name }}
-                  </option>
-                </select>
-                <p class="form-hint">You can select multiple categories for this application</p>
               </div>
             </div>
-
-            <div class="form-group">
-              <label for="appVersion">Version</label>
-              <input
-                type="text"
-                id="appVersion"
-                v-model="appForm.version"
-                placeholder="e.g., 1.0.0"
-                required
-              />
+            <div v-else class="no-screenshots">
+              <p>No screenshots uploaded yet. Use the upload area above to add screenshots.</p>
             </div>
+          </div>
 
-            <div class="form-group">
-              <label>Application Icon</label>
-              <FileUpload
-                accept="image/*"
-                :multiple="false"
-                hint="Supports JPG, PNG formats, recommended size 512x512"
-                @upload-success="handleIconUpload"
-              />
-            </div>
-
-            <div class="form-actions">
-              <button type="button" class="cancel-btn" @click="cancelAppForm">Cancel</button>
-              <button type="submit" class="save-btn" :disabled="saving">
-                {{
-                  saving ? 'Saving...' : editingApp ? 'Update Application' : 'Create Application'
-                }}
-              </button>
-            </div>
-          </form>
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="closeScreenshotsModal">Cancel</button>
+            <button
+              type="button"
+              class="save-btn"
+              @click="saveScreenshots"
+              :disabled="savingScreenshots"
+            >
+              {{ savingScreenshots ? 'Saving...' : 'Save Screenshots' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -279,18 +248,7 @@ export default {
       filteredApps: [],
       categories: [],
       loading: false,
-      categoriesLoading: false,
       error: null,
-      showAddAppForm: false,
-      editingApp: null,
-      appForm: {
-        name: '',
-        description: '',
-        categoryIds: [], // Changed to array for multiple categories
-        version: '',
-        iconURI: ''
-      },
-      saving: false,
       showDeleteConfirmation: false,
       appToDelete: null,
       searchTimeout: null, // 添加防抖定时器
@@ -299,16 +257,15 @@ export default {
       pageSize: 20,
       totalItems: 0,
       totalPages: 0,
-      // 分类选择相关
-      selectedCategoryToAdd: ''
+      // 截图管理相关
+      showScreenshotsModal: false,
+      screenshotsApp: null,
+      screenshots: [],
+      savingScreenshots: false
     };
   },
   computed: {
-    // 可用的分类（排除已选择的）
-    availableCategories() {
-      if (!this.appForm.categoryIds) return this.categories;
-      return this.categories.filter(category => !this.appForm.categoryIds.includes(category.id));
-    }
+    // 移除了编辑相关的计算属性
   },
   methods: {
     async fetchApps() {
@@ -486,89 +443,110 @@ export default {
     },
 
     async openAddAppForm() {
-      await this.fetchCategories();
-      this.showAddAppForm = true;
+      // 重定向到创建应用页面
+      this.$router.push('/admin/applications/create');
     },
 
-    async editApp(app) {
-      await this.fetchCategories();
-      this.editingApp = app;
-
-      // Handle both old single category and new multiple categories format
-      let categoryIds = [];
-      if (app.categoryIds && Array.isArray(app.categoryIds)) {
-        categoryIds = [...app.categoryIds];
-      } else if (app.category) {
-        if (Array.isArray(app.category)) {
-          // If category is an array of names, convert to IDs
-          categoryIds = app.category
-            .map(categoryName => {
-              const category = this.categories.find(cat => cat.name === categoryName);
-              return category ? category.id : null;
-            })
-            .filter(id => id !== null);
-        } else {
-          // Single category (old format)
-          const category = this.categories.find(
-            cat => cat.id === app.category || cat.name === app.category
-          );
-          if (category) {
-            categoryIds = [category.id];
-          }
-        }
-      }
-
-      this.appForm = {
-        name: app.name,
-        description: app.description,
-        categoryIds: categoryIds,
-        version: app.version,
-        iconURI: app.iconURI || app.iconUrl || ''
-      };
-      this.showAddAppForm = true;
-    },
-
-    cancelAppForm() {
-      this.showAddAppForm = false;
-      this.editingApp = null;
-      this.appForm = {
-        name: '',
-        description: '',
-        categoryIds: [],
-        version: '',
-        iconURI: ''
-      };
-      this.selectedCategoryToAdd = '';
-    },
-
-    async saveApp() {
-      this.saving = true;
+    // 截图管理方法
+    async manageScreenshots(app) {
+      this.screenshotsApp = app;
+      this.screenshots = [];
 
       try {
-        if (this.editingApp) {
-          await adminService.updateApplication(this.editingApp.id, this.appForm);
-          this.$emit('show-notification', {
-            type: 'success',
-            message: `Application "${this.appForm.name}" updated successfully`
-          });
-        } else {
-          await adminService.createApplication(this.appForm);
-          this.$emit('show-notification', {
-            type: 'success',
-            message: `Application "${this.appForm.name}" created successfully`
-          });
-        }
-
-        this.cancelAppForm();
-        this.fetchApps();
+        // 这里可以调用API获取现有截图
+        // const screenshots = await adminService.getAppScreenshots(app.id);
+        // this.screenshots = screenshots || [];
       } catch (error) {
-        console.error('Error saving app:', error);
+        console.error('Error fetching screenshots:', error);
+      }
+
+      this.showScreenshotsModal = true;
+    },
+
+    // 格式化下载量显示
+    formatDownloads(count) {
+      if (count === 0) return '0';
+      if (count < 1000) return count.toString();
+      if (count < 1000000) return (count / 1000).toFixed(1) + 'K';
+      if (count < 1000000000) return (count / 1000000).toFixed(1) + 'M';
+      return (count / 1000000000).toFixed(1) + 'B';
+    },
+
+    closeScreenshotsModal() {
+      // 清理所有预览URL以避免内存泄漏
+      this.screenshots.forEach(screenshot => {
+        if (screenshot.previewUrl) {
+          URL.revokeObjectURL(screenshot.previewUrl);
+        }
+      });
+
+      this.showScreenshotsModal = false;
+      this.screenshotsApp = null;
+      this.screenshots = [];
+    },
+
+    handleScreenshotUpload(files) {
+      // files 可能是单个文件或文件数组
+      const fileArray = Array.isArray(files) ? files : [files];
+
+      fileArray.forEach(file => {
+        // 创建本地预览URL用于显示
+        const previewUrl = URL.createObjectURL(file.file || file);
+
+        this.screenshots.push({
+          previewUrl: previewUrl, // 用于预览显示
+          uri: file.url?.iconURI || file.url?.uri || '', // API返回的URI
+          caption: file.name || 'Screenshot'
+        });
+      });
+
+      // 清空FileUpload组件的预览，让它回到初始状态
+      this.$nextTick(() => {
+        if (this.$refs.screenshotUpload) {
+          this.$refs.screenshotUpload.clearFiles();
+        }
+      });
+    },
+
+    removeScreenshot(index) {
+      // 清理预览URL以避免内存泄漏
+      const screenshot = this.screenshots[index];
+      if (screenshot.previewUrl) {
+        URL.revokeObjectURL(screenshot.previewUrl);
+      }
+      this.screenshots.splice(index, 1);
+    },
+
+    async saveScreenshots() {
+      if (!this.screenshotsApp) return;
+
+      this.savingScreenshots = true;
+      try {
+        // 构建包含icons数组的map结构
+        const payload = {
+          icons: this.screenshots.map(screenshot => ({
+            uri: screenshot.uri,
+            caption: screenshot.caption || ''
+          }))
+        };
+
+        // 调用API保存截图
+        await adminService.submitScreenshots(this.screenshotsApp.id, payload);
+
+        this.$emit('show-notification', {
+          type: 'success',
+          message: 'Screenshots updated successfully'
+        });
+
+        this.closeScreenshotsModal();
+      } catch (error) {
+        console.error('Error saving screenshots:', error);
         this.$emit('show-notification', {
           type: 'error',
-          message: `Failed to ${this.editingApp ? 'update' : 'create'} application`
+          message: 'Failed to save screenshots'
         });
       } finally {
-        this.saving = false;
+        this.savingScreenshots = false;
       }
     },
 
@@ -693,9 +671,11 @@ export default {
       border-radius: 4px;
       cursor: pointer;
       font-weight: 500;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      text-decoration: none;
+      width: auto;
 
       &:hover {
         background-color: var(--accent-primary-dark);
@@ -800,29 +780,24 @@ export default {
           }
         }
 
-        .status-badge {
+        .downloads-count {
           padding: 0.25rem 0.5rem;
           border-radius: 12px;
-          font-size: 0.8rem;
-          font-weight: 500;
-          text-transform: capitalize;
-
-          &.active {
-            background-color: var(--success-bg, #d4edda);
-            color: var(--success-text, #155724);
-          }
-
-          &.inactive {
-            background-color: var(--error-bg, #f8d7da);
-            color: var(--error-text, #721c24);
-          }
+          font-size: 0.9rem;
+          font-weight: 600;
+          background-color: var(--surface-secondary);
+          color: var(--text-primary);
+          display: inline-block;
+          min-width: 40px;
+          text-align: center;
         }
 
         td.actions {
           display: flex;
           gap: 0.5rem;
 
-          button {
+          button,
+          .edit-btn {
             width: 32px;
             height: 32px;
             display: flex;
@@ -831,13 +806,26 @@ export default {
             border-radius: 4px;
             border: none;
             cursor: pointer;
+            position: relative;
+            z-index: 1;
 
             &.edit-btn {
               background-color: var(--surface-secondary);
               color: var(--text-primary);
+              text-decoration: none;
 
               &:hover {
                 background-color: var(--accent-primary);
+                color: white;
+              }
+            }
+
+            &.screenshots-btn {
+              background-color: var(--surface-secondary);
+              color: var(--text-primary);
+
+              &:hover {
+                background-color: var(--info-color, #17a2b8);
                 color: white;
               }
             }
@@ -1250,6 +1238,119 @@ export default {
           &:disabled {
             cursor: not-allowed;
           }
+        }
+      }
+    }
+  }
+
+  // 截图管理模态框样式
+  .modal-content.screenshots-modal {
+    max-width: 800px;
+    max-height: 90vh;
+
+    .modal-body {
+      .screenshots-section {
+        margin-bottom: 2rem;
+
+        h4 {
+          margin: 0 0 1rem 0;
+          color: var(--text-primary);
+          font-size: 1.1rem;
+          font-weight: 600;
+        }
+
+        .screenshots-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 1rem;
+          margin-bottom: 1rem;
+
+          .screenshot-item {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--surface-secondary);
+
+            .screenshot-image {
+              width: 100%;
+              height: 150px;
+              object-fit: cover;
+            }
+
+            .screenshot-info {
+              padding: 0.75rem;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 0.5rem;
+
+              .caption-input {
+                flex: 1;
+                padding: 0.5rem;
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                font-size: 0.9rem;
+                background-color: var(--surface-primary);
+                color: var(--text-primary);
+
+                &:focus {
+                  outline: none;
+                  border-color: var(--accent-primary);
+                }
+
+                &::placeholder {
+                  color: var(--text-secondary);
+                }
+              }
+
+              .screenshot-caption {
+                margin: 0;
+                font-size: 0.9rem;
+                color: var(--text-primary);
+                flex: 1;
+                margin-right: 0.5rem;
+              }
+
+              .remove-screenshot-btn {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 1.1rem;
+                color: var(--error-color, #dc3545);
+                padding: 0.25rem;
+                border-radius: 4px;
+                transition: background-color 0.2s ease;
+                flex-shrink: 0;
+
+                &:hover {
+                  background-color: var(--error-bg, rgba(220, 53, 69, 0.1));
+                }
+              }
+            }
+          }
+        }
+
+        .no-screenshots {
+          text-align: center;
+          padding: 2rem;
+          color: var(--text-secondary);
+          background: var(--surface-secondary);
+          border-radius: 8px;
+          border: 2px dashed var(--border-color);
+
+          p {
+            margin: 0;
+            font-style: italic;
+          }
+        }
+      }
+
+      .upload-section {
+        h4 {
+          margin: 0 0 1rem 0;
+          color: var(--text-primary);
+          font-size: 1.1rem;
+          font-weight: 600;
         }
       }
     }

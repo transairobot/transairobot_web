@@ -74,19 +74,6 @@ export default {
     updateUser({ commit }, userData) {
       commit('UPDATE_USER', userData);
     },
-    async applyAsDeveloper({ commit }, developerData) {
-      try {
-        const developerService = await import('../../services/developer.service').then(
-          module => module.default
-        );
-        const updatedUser = await developerService.applyForDeveloperStatus(developerData);
-        commit('UPDATE_USER', updatedUser);
-        return updatedUser;
-      } catch (error) {
-        console.error('Developer application error:', error);
-        throw error;
-      }
-    },
     async fetchCurrentUser({ commit }) {
       try {
         const user = await authService.getProfile();

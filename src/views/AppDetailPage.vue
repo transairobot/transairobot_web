@@ -29,9 +29,9 @@
                 <h1 class="app-detail-name">{{ app.name }}</h1>
 
                 <div class="app-detail-meta">
-                  <div class="app-detail-developer">
-                    <span class="meta-label">Developer:</span>
-                    <span class="meta-value">{{ app.developerId }}</span>
+                  <div class="app-detail-author">
+                    <span class="meta-label">Author:</span>
+                    <span class="meta-value">{{ app.author }}</span>
                   </div>
 
                   <div class="app-detail-version">
@@ -89,6 +89,89 @@
           <div class="app-detail-content">
             <div v-if="activeTab === 'description'" class="app-detail-description">
               <div class="markdown-content" v-html="renderedDescription"></div>
+            </div>
+
+            <div v-else-if="activeTab === 'screenshots'" class="app-detail-screenshots">
+              <div class="screenshots-header">
+                <h2>Screenshots</h2>
+              </div>
+
+              <div v-if="screenshotsLoading" class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading screenshots...</p>
+              </div>
+
+              <div v-else-if="screenshotsError" class="error-state">
+                <p>Failed to load screenshots</p>
+                <button @click="loadScreenshots" class="retry-btn">Retry</button>
+              </div>
+
+              <div v-else-if="screenshots.length === 0" class="empty-state">
+                <p>No screenshots available for this application</p>
+              </div>
+
+              <div v-else class="screenshots-grid">
+                <div
+                  v-for="(screenshot, index) in screenshots"
+                  :key="screenshot.id || index"
+                  class="screenshot-item"
+                  @click="openScreenshotModal(index)"
+                >
+                  <img
+                    :src="screenshot.imageUrl || screenshot.uri || screenshot.url"
+                    :alt="screenshot.caption || `Screenshot ${index + 1}`"
+                    class="screenshot-image"
+                  />
+                  <div v-if="screenshot.caption" class="screenshot-caption">
+                    {{ screenshot.caption }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Screenshot Modal -->
+              <div
+                v-if="showScreenshotModal"
+                class="screenshot-modal"
+                @click="closeScreenshotModal"
+              >
+                <div class="modal-content" @click.stop>
+                  <button class="close-btn" @click="closeScreenshotModal">×</button>
+                  <div class="modal-navigation">
+                    <button
+                      class="nav-btn prev-btn"
+                      @click.stop="previousScreenshot"
+                      :disabled="currentScreenshotIndex === 0"
+                    >
+                      ‹
+                    </button>
+                    <img
+                      :src="
+                        screenshots[currentScreenshotIndex]?.imageUrl ||
+                        screenshots[currentScreenshotIndex]?.uri ||
+                        screenshots[currentScreenshotIndex]?.url
+                      "
+                      :alt="
+                        screenshots[currentScreenshotIndex]?.caption ||
+                        `Screenshot ${currentScreenshotIndex + 1}`
+                      "
+                      class="modal-screenshot"
+                    />
+                    <button
+                      class="nav-btn next-btn"
+                      @click.stop="nextScreenshot"
+                      :disabled="currentScreenshotIndex >= (screenshots?.length || 0) - 1"
+                    >
+                      ›
+                    </button>
+                  </div>
+                  <div v-if="screenshots[currentScreenshotIndex]?.caption" class="modal-caption">
+                    {{ screenshots[currentScreenshotIndex].caption }}
+                  </div>
+                  <div class="modal-counter">
+                    {{ currentScreenshotIndex + 1 }} / {{ screenshots.length }}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div v-else-if="activeTab === 'reviews'" class="app-detail-reviews">
@@ -242,7 +325,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import AppHeader from '../components/common/AppHeader.vue';
@@ -272,6 +355,7 @@ const error = computed(() => store.state.apps.error);
 const activeTab = ref('description');
 const tabs = [
   { id: 'description', name: 'Description' },
+  { id: 'screenshots', name: 'Screenshots' },
   { id: 'reviews', name: 'Reviews' },
   { id: 'related', name: 'Related Apps' }
 ];
@@ -291,6 +375,13 @@ const submittingReview = ref(false);
 
 // 无限滚动评价引用
 const reviewsScrollRef = ref();
+
+// Screenshots相关状态
+const screenshots = ref([]);
+const screenshotsLoading = ref(false);
+const screenshotsError = ref(null);
+const showScreenshotModal = ref(false);
+const currentScreenshotIndex = ref(0);
 
 // 使用无限滚动组合式函数获取评价
 const {
@@ -401,6 +492,96 @@ const handleInstallationComplete = (result: any) => {
   }
 };
 
+// Screenshots相关方法
+const loadScreenshots = async () => {
+  if (!appId.value) return;
+
+  screenshotsLoading.value = true;
+  screenshotsError.value = null;
+
+  try {
+    const result = await applicationStoreService.getApplicationScreenshots(appId.value);
+
+    // 处理不同的数据格式
+    let screenshotsData = [];
+
+    if (Array.isArray(result)) {
+      // 如果直接是数组
+      screenshotsData = result;
+    } else if (result && result.data && Array.isArray(result.data)) {
+      // 如果是 {code, message, data} 格式
+      screenshotsData = result.data;
+    } else if (result && typeof result === 'object') {
+      // 如果是类似数组的对象 {0: {...}, 1: {...}}
+      screenshotsData = Object.values(result);
+    }
+
+    screenshots.value = screenshotsData;
+  } catch (error) {
+    console.error('Failed to load screenshots:', error);
+    screenshotsError.value = error;
+    screenshots.value = [];
+  } finally {
+    screenshotsLoading.value = false;
+  }
+};
+
+const openScreenshotModal = (index: number) => {
+  currentScreenshotIndex.value = index;
+  showScreenshotModal.value = true;
+};
+
+const closeScreenshotModal = () => {
+  showScreenshotModal.value = false;
+};
+
+const nextScreenshot = () => {
+  const totalScreenshots = screenshots.value?.length || 0;
+  if (currentScreenshotIndex.value < totalScreenshots - 1) {
+    currentScreenshotIndex.value++;
+  }
+};
+
+const previousScreenshot = () => {
+  if (currentScreenshotIndex.value > 0) {
+    currentScreenshotIndex.value--;
+  }
+};
+
+// 键盘导航支持
+const handleKeydown = (event: KeyboardEvent) => {
+  if (!showScreenshotModal.value) return;
+
+  switch (event.key) {
+    case 'ArrowLeft':
+      event.preventDefault();
+      previousScreenshot();
+      break;
+    case 'ArrowRight':
+      event.preventDefault();
+      nextScreenshot();
+      break;
+    case 'Escape':
+      event.preventDefault();
+      closeScreenshotModal();
+      break;
+  }
+};
+
+// 监听键盘事件
+watch(showScreenshotModal, isOpen => {
+  if (isOpen) {
+    document.addEventListener('keydown', handleKeydown);
+  } else {
+    document.removeEventListener('keydown', handleKeydown);
+  }
+});
+
+// 组件卸载时清理事件监听器
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown);
+});
+
 // 切换标签页
 const setActiveTab = (tabId: string) => {
   activeTab.value = tabId;
@@ -408,6 +589,11 @@ const setActiveTab = (tabId: string) => {
   // 如果切换到评价标签且还没有加载过评价，则开始加载
   if (tabId === 'reviews' && reviews.value.length === 0 && !reviewsLoading.value) {
     refreshReviews();
+  }
+
+  // 如果切换到截图标签且还没有加载过截图，则开始加载
+  if (tabId === 'screenshots' && screenshots.value.length === 0 && !screenshotsLoading.value) {
+    loadScreenshots();
   }
 };
 
@@ -718,6 +904,193 @@ onMounted(() => {
       code {
         background: none;
         padding: 0;
+      }
+    }
+  }
+
+  .app-detail-screenshots {
+    .screenshots-header {
+      margin-bottom: 2rem;
+
+      h2 {
+        margin: 0;
+        color: var(--color-text-primary);
+      }
+    }
+
+    .loading-state,
+    .error-state,
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--color-text-secondary);
+
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--color-border);
+        border-top: 3px solid var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+      }
+
+      .retry-btn {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background-color: var(--color-primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+
+        &:hover {
+          background-color: var(--color-primary-dark);
+        }
+      }
+    }
+
+    .screenshots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+
+      .screenshot-item {
+        cursor: pointer;
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--color-surface);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .screenshot-image {
+          width: 100%;
+          height: 200px;
+          object-fit: cover;
+          display: block;
+        }
+
+        .screenshot-caption {
+          padding: 1rem;
+          font-size: 0.9rem;
+          color: var(--color-text-secondary);
+          background: var(--color-surface);
+        }
+      }
+    }
+
+    .screenshot-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+
+      .modal-content {
+        position: relative;
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .close-btn {
+          position: absolute;
+          top: -40px;
+          right: 0;
+          background: none;
+          border: none;
+          color: white;
+          font-size: 2rem;
+          cursor: pointer;
+          z-index: 1001;
+
+          &:hover {
+            opacity: 0.7;
+          }
+        }
+
+        .modal-navigation {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+
+          .modal-screenshot {
+            max-width: 80vw;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 8px;
+          }
+
+          .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+
+            &:hover:not(:disabled) {
+              background: rgba(255, 255, 255, 0.3);
+            }
+
+            &:disabled {
+              opacity: 0.3;
+              cursor: not-allowed;
+            }
+
+            &.prev-btn {
+              left: -70px;
+            }
+
+            &.next-btn {
+              right: -70px;
+            }
+          }
+        }
+
+        .modal-caption {
+          margin-top: 1rem;
+          color: white;
+          text-align: center;
+          font-size: 1rem;
+        }
+
+        .modal-counter {
+          margin-top: 0.5rem;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.9rem;
+        }
+      }
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
       }
     }
   }

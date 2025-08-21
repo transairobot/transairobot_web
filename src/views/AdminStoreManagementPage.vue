@@ -56,6 +56,21 @@ export default {
     return {
       activeTab: 'featured'
     };
+  },
+  created() {
+    // 检查URL参数中是否指定了tab
+    const tabFromQuery = this.$route.query.tab;
+    if (tabFromQuery && ['featured', 'apps', 'categories'].includes(tabFromQuery)) {
+      this.activeTab = tabFromQuery;
+    }
+  },
+  watch: {
+    // 监听路由变化，更新活动tab
+    '$route.query.tab'(newTab) {
+      if (newTab && ['featured', 'apps', 'categories'].includes(newTab)) {
+        this.activeTab = newTab;
+      }
+    }
   }
 };
 </script>

@@ -113,6 +113,12 @@ class AdminService {
     });
   }
 
+  async getApplication(id: string): Promise<any> {
+    return await api.get(`/applications/${id}`, {
+      showErrorNotification: false
+    });
+  }
+
   async getFeaturedApplicationsForAdmin(
     params: { page?: number; limit?: number; name?: string } = {}
   ): Promise<any> {
@@ -163,6 +169,12 @@ class AdminService {
   async deleteApplication(appId: string): Promise<any> {
     const result = await api.delete(`/admin/applications/${appId}`);
     notificationService.success('Application deleted successfully');
+    return result;
+  }
+
+  async submitScreenshots(appId: string, screenshotsData: any): Promise<any> {
+    const result = await api.post(`/admin/applications/${appId}/screenshots`, screenshotsData);
+    notificationService.success('Screenshots updated successfully');
     return result;
   }
 

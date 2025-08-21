@@ -47,7 +47,6 @@
               </template>
               <span v-else class="no-category">No Categories</span>
             </div>
-            <p class="status">Status: {{ app.status || 'active' }}</p>
           </div>
           <div class="app-actions">
             <button @click="toggleFeature(app)" :class="{ 'featured-btn': app.featured }">
@@ -442,11 +441,6 @@ export default {
             margin: 0 0 0.5rem 0;
             color: var(--text-secondary);
             font-size: 0.9rem;
-          }
-
-          .status {
-            font-size: 0.8rem;
-            text-transform: capitalize;
           }
         }
 

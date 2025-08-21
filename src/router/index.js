@@ -95,6 +95,20 @@ const routes = [
   },
 
   {
+    path: '/admin/applications/create',
+    name: 'AdminCreateApplication',
+    component: lazyLoadView('AdminCreateApplicationPage'),
+    meta: { requiresAuth: true, roles: ['admin'] }
+  },
+
+  {
+    path: '/admin/applications/edit/:id',
+    name: 'AdminEditApplication',
+    component: lazyLoadView('AdminCreateApplicationPage'),
+    meta: { requiresAuth: true, roles: ['admin'] }
+  },
+
+  {
     path: '/admin/users',
     name: 'AdminUserManagement',
     component: lazyLoadView('AdminUserManagementPage'),

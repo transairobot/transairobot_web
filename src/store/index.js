@@ -2,7 +2,6 @@ import { createStore } from 'vuex';
 import auth from './modules/auth';
 import apps from './modules/apps';
 import robots from './modules/robots';
-import developer from './modules/developer';
 import admin from './modules/admin';
 import { setTheme, toggleTheme as toggleThemeUtil } from '../utils/theme';
 
@@ -47,7 +46,6 @@ export default createStore({
     auth,
     apps,
     robots,
-    developer,
     admin
   }
 });
