@@ -47,7 +47,7 @@
             </div>
           </router-link>
 
-          <div class="admin-nav-card" @click="showUserManagement = true">
+          <router-link to="/admin/users" class="admin-nav-card">
             <div class="card-icon">
               <i class="fas fa-users"></i>
             </div>
@@ -55,7 +55,7 @@
               <h3>User Management</h3>
               <p>Manage user accounts and permissions</p>
             </div>
-          </div>
+          </router-link>
 
           <div class="admin-nav-card" @click="$router.push('/admin/analytics')">
             <div class="card-icon">
@@ -64,49 +64,6 @@
             <div class="card-content">
               <h3>Analytics</h3>
               <p>View system usage statistics</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- User Management Modal -->
-        <div v-if="showUserManagement" class="modal-overlay" @click="showUserManagement = false">
-          <div class="modal-content" @click.stop>
-            <div class="modal-header">
-              <h2>User Management</h2>
-              <button @click="showUserManagement = false" class="close-btn">×</button>
-            </div>
-            <div class="modal-body">
-              <div class="user-filters">
-                <select v-model="userFilters.role" @change="loadUsers">
-                  <option value="">All Roles</option>
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <select v-model="userFilters.status" @change="loadUsers">
-                  <option value="">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="disabled">Disabled</option>
-                </select>
-              </div>
-              <div class="user-list">
-                <div v-for="user in users" :key="user.id" class="user-item">
-                  <div class="user-info">
-                    <strong>{{ user.nickname }}</strong>
-                    <span class="user-email">{{ user.email }}</span>
-                    <span class="user-role" :class="user.role">{{ user.role }}</span>
-                  </div>
-                  <div class="user-actions">
-                    <button
-                      v-if="!user.isDisabled"
-                      @click="disableUser(user.id)"
-                      class="btn-danger"
-                    >
-                      Disable
-                    </button>
-                    <button v-else @click="enableUser(user.id)" class="btn-success">Enable</button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -130,12 +87,6 @@ export default {
   data() {
     return {
       systemStats: null,
-      users: [],
-      showUserManagement: false,
-      userFilters: {
-        role: '',
-        status: ''
-      },
       loading: false
     };
   },
@@ -145,45 +96,6 @@ export default {
         this.systemStats = await adminService.getSystemAnalytics();
       } catch (error) {
         console.error('Failed to load system stats:', error);
-      }
-    },
-
-    async loadUsers() {
-      if (!this.showUserManagement) return;
-
-      try {
-        this.loading = true;
-        const result = await adminService.getUsers(this.userFilters);
-        this.users = result.data || result;
-      } catch (error) {
-        console.error('Failed to load users:', error);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async disableUser(userId) {
-      try {
-        await adminService.disableUser(userId);
-        await this.loadUsers();
-      } catch (error) {
-        console.error('Failed to disable user:', error);
-      }
-    },
-
-    async enableUser(userId) {
-      try {
-        await adminService.enableUser(userId);
-        await this.loadUsers();
-      } catch (error) {
-        console.error('Failed to enable user:', error);
-      }
-    }
-  },
-  watch: {
-    showUserManagement(newVal) {
-      if (newVal) {
-        this.loadUsers();
       }
     }
   },
@@ -307,143 +219,6 @@ export default {
           margin: 0;
           color: var(--text-secondary);
           font-size: 0.9rem;
-        }
-      }
-    }
-  }
-
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .modal-content {
-    background: var(--card-bg);
-    border-radius: 8px;
-    width: 90%;
-    max-width: 800px;
-    max-height: 80vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .modal-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    h2 {
-      margin: 0;
-      color: var(--text-primary);
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--text-secondary);
-
-      &:hover {
-        color: var(--text-primary);
-      }
-    }
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-    overflow-y: auto;
-  }
-
-  .user-filters {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-
-    select {
-      padding: 0.5rem;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      background-color: var(--input-bg);
-      color: var(--input-text);
-    }
-  }
-
-  .user-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .user-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: 4px;
-
-    .user-info {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-
-      .user-email {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-      }
-
-      .user-role {
-        font-size: 0.8rem;
-        padding: 0.2rem 0.5rem;
-        border-radius: 12px;
-        color: white;
-
-        &.admin {
-          background: var(--danger);
-        }
-
-        &.user {
-          background: var(--success);
-        }
-      }
-    }
-
-    .user-actions {
-      .btn-danger {
-        background: var(--danger);
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        cursor: pointer;
-
-        &:hover {
-          background: var(--error);
-        }
-      }
-
-      .btn-success {
-        background: var(--success);
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        cursor: pointer;
-
-        &:hover {
-          opacity: 0.9;
         }
       }
     }

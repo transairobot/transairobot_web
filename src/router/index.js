@@ -95,6 +95,13 @@ const routes = [
   },
 
   {
+    path: '/admin/users',
+    name: 'AdminUserManagement',
+    component: lazyLoadView('AdminUserManagementPage'),
+    meta: { requiresAuth: true, roles: ['admin'] }
+  },
+
+  {
     path: '/admin/analytics',
     name: 'AdminAnalytics',
     component: lazyLoadView('AnalyticsPage'),

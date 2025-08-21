@@ -65,38 +65,6 @@ export class Category {
 }
 
 class AdminService {
-  // 用户管理
-  async getUsers(filters: any = {}, page = 1, limit = 10): Promise<PagedResult<User>> {
-    const params = {
-      page,
-      limit,
-      ...filters
-    };
-    return await api.get('/admin/users', { params });
-  }
-
-  async getUserDetails(userId: string): Promise<User> {
-    return await api.get(`/admin/users/${userId}`);
-  }
-
-  async updateUser(userId: string, userData: Partial<User>): Promise<User> {
-    const result = await api.put(`/admin/users/${userId}`, userData);
-    notificationService.success('User updated successfully');
-    return result;
-  }
-
-  async disableUser(userId: string): Promise<any> {
-    const result = await api.post(`/admin/users/${userId}/disable`, {});
-    notificationService.success('User disabled successfully');
-    return result;
-  }
-
-  async enableUser(userId: string): Promise<any> {
-    const result = await api.post(`/admin/users/${userId}/enable`, {});
-    notificationService.success('User enabled successfully');
-    return result;
-  }
-
   // 数据分析
   async getSystemAnalytics(): Promise<SystemAnalytics> {
     return await api.get('/admin/analysis/system');
@@ -192,8 +160,17 @@ class AdminService {
   }
 
   // 分类管理
-  async getCategories(): Promise<Category[]> {
-    return await api.get('/admin/categories/list');
+  async getCategories(params: { page?: number; limit?: number; name?: string } = {}): Promise<any> {
+    const queryParams = {
+      page: 1,
+      limit: 20,
+      ...params
+    };
+
+    return await api.get('/admin/categories/list', {
+      params: queryParams,
+      showErrorNotification: false
+    });
   }
 
   async createCategory(categoryData: any): Promise<Category> {
@@ -211,6 +188,40 @@ class AdminService {
   async deleteCategory(categoryId: string): Promise<any> {
     const result = await api.delete(`/admin/categories/${categoryId}`);
     notificationService.success('Category deleted successfully');
+    return result;
+  }
+
+  // 用户管理
+  async getUsers(
+    params: {
+      page?: number;
+      limit?: number;
+      role?: string;
+      status?: string;
+      search?: string;
+    } = {}
+  ): Promise<any> {
+    const queryParams = {
+      page: 1,
+      limit: 20,
+      ...params
+    };
+
+    return await api.get('/admin/users', {
+      params: queryParams,
+      showErrorNotification: false
+    });
+  }
+
+  async disableUser(userId: string): Promise<any> {
+    const result = await api.post(`/admin/users/${userId}/disable`, {});
+    notificationService.success('User disabled successfully');
+    return result;
+  }
+
+  async enableUser(userId: string): Promise<any> {
+    const result = await api.post(`/admin/users/${userId}/enable`, {});
+    notificationService.success('User enabled successfully');
     return result;
   }
 

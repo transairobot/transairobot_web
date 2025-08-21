@@ -258,6 +258,7 @@ import InstallationModal from '../components/robots/InstallationModal.vue';
 import LoadingState from '../components/common/LoadingState.vue';
 import ErrorState from '../components/common/ErrorState.vue';
 import AppButton from '../components/common/AppButton.vue';
+import { formatDate } from '@/utils/format';
 import SearchBar from '../components/common/SearchBar.vue';
 
 export default {
@@ -326,7 +327,7 @@ export default {
       if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
       if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 
-      return date.toLocaleDateString();
+      return formatDate(date);
     });
 
     // Filter apps based on search query

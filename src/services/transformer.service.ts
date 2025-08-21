@@ -1,3 +1,5 @@
+import { formatDate } from '@/utils/format';
+
 class TransformerService {
   transformRequest(data: any, endpoint: string): any {
     if (!data) return data;
@@ -66,11 +68,11 @@ class TransformerService {
     transformedItem.isRejected = transformedItem.status === 'rejected';
 
     if (transformedItem.createdAt) {
-      transformedItem.createdAtFormatted = new Date(transformedItem.createdAt).toLocaleDateString();
+      transformedItem.createdAtFormatted = formatDate(transformedItem.createdAt);
     }
 
     if (transformedItem.updatedAt) {
-      transformedItem.updatedAtFormatted = new Date(transformedItem.updatedAt).toLocaleDateString();
+      transformedItem.updatedAtFormatted = formatDate(transformedItem.updatedAt);
     }
 
     return transformedItem;

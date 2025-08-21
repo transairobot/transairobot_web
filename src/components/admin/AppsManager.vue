@@ -66,6 +66,44 @@
           </tbody>
         </table>
       </div>
+
+      <!-- 分页控件 -->
+      <div class="pagination-container">
+        <div class="pagination-info">
+          <span
+            >显示 {{ (currentPage - 1) * pageSize + 1 }} -
+            {{ Math.min(currentPage * pageSize, totalItems) }} 条，共 {{ totalItems }} 条</span
+          >
+          <select v-model="pageSize" @change="changePageSize(pageSize)" class="page-size-selector">
+            <option :value="10">10 条/页</option>
+            <option :value="20">20 条/页</option>
+            <option :value="50">50 条/页</option>
+            <option :value="100">100 条/页</option>
+          </select>
+        </div>
+
+        <div class="pagination-controls">
+          <button @click="previousPage" :disabled="currentPage === 1" class="pagination-btn">
+            上一页
+          </button>
+
+          <div class="page-numbers">
+            <button
+              v-for="page in getVisiblePages()"
+              :key="page"
+              @click="goToPage(page)"
+              :class="['page-btn', { active: page === currentPage, ellipsis: page === '...' }]"
+              :disabled="page === '...'"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <button @click="nextPage" :disabled="currentPage === totalPages" class="pagination-btn">
+            下一页
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Add/Edit App Form -->
@@ -214,7 +252,12 @@ export default {
       saving: false,
       showDeleteConfirmation: false,
       appToDelete: null,
-      searchTimeout: null // 添加防抖定时器
+      searchTimeout: null, // 添加防抖定时器
+      // 分页相关
+      currentPage: 1,
+      pageSize: 20,
+      totalItems: 0,
+      totalPages: 0
     };
   },
   methods: {
@@ -223,45 +266,57 @@ export default {
       this.error = null;
 
       try {
-        const result = await adminService.getApplicationsForAdmin();
+        const result = await adminService.getApplicationsForAdmin({
+          page: this.currentPage,
+          limit: this.pageSize,
+          name: this.searchQuery || undefined
+        });
 
-        // 处理不同的API响应格式
+        // 处理新的响应格式 - API 服务已经提取了 data 字段
         let appsData = [];
+        let total = 0;
 
-        // 标准格式: {code: 0, message: "", data: [...]}
-        if (result && result.data && Array.isArray(result.data)) {
-          appsData = result.data;
-        }
-        // 直接数组格式: [...]
-        else if (Array.isArray(result)) {
-          appsData = result;
-        }
-        // 嵌套格式: {applications: [...]} 或 {items: [...]}
-        else if (result && result.applications && Array.isArray(result.applications)) {
-          appsData = result.applications;
-        } else if (result && result.items && Array.isArray(result.items)) {
-          appsData = result.items;
-        }
-        // 索引对象格式: {0: {...}, 1: {...}} (API转换后的格式)
-        else if (result && typeof result === 'object' && !Array.isArray(result)) {
-          const keys = Object.keys(result);
-          // 检查是否所有键都是数字索引
-          const isIndexedObject = keys.length > 0 && keys.every(key => /^\d+$/.test(key));
+        if (result) {
+          // API 服务返回的直接是 data 内容: { items: [...], pagination: { total: 1 } }
+          if (result.items && Array.isArray(result.items)) {
+            appsData = result.items;
+            total = result.pagination ? result.pagination.total : result.items.length;
+          }
+          // 兼容旧格式: 直接是数组
+          else if (Array.isArray(result)) {
+            appsData = result;
+            total = result.length;
+          }
+          // 兼容其他格式 (如果 API 服务没有提取 data)
+          else if (result.data && result.data.items) {
+            appsData = result.data.items;
+            total = result.data.pagination
+              ? result.data.pagination.total
+              : result.data.items.length;
+          }
+          // 兼容索引对象格式: {0: {...}, 1: {...}}
+          else if (typeof result === 'object' && !Array.isArray(result)) {
+            const keys = Object.keys(result);
+            const isIndexedObject = keys.length > 0 && keys.every(key => /^\d+$/.test(key));
 
-          if (isIndexedObject) {
-            appsData = Object.values(result);
-          } else {
-            appsData = [];
+            if (isIndexedObject) {
+              appsData = Object.values(result);
+              total = appsData.length;
+            }
           }
         }
 
         this.apps = appsData;
         this.filteredApps = [...this.apps];
+        this.totalItems = total;
+        this.totalPages = Math.ceil(total / this.pageSize);
       } catch (error) {
         // 静默处理错误，不显示任何通知或错误状态
         console.error('Error fetching apps:', error);
         this.apps = [];
         this.filteredApps = [];
+        this.totalItems = 0;
+        this.totalPages = 0;
       } finally {
         this.loading = false;
       }
@@ -321,17 +376,44 @@ export default {
       // 设置新的定时器，500ms后执行搜索
       this.searchTimeout = setTimeout(() => {
         if (!this.searchQuery.trim()) {
-          this.filteredApps = [...this.apps];
+          // 搜索为空时，重新获取当前页数据
+          this.currentPage = 1;
+          this.fetchApps();
           return;
         }
 
-        const query = this.searchQuery.toLowerCase();
-        this.filteredApps = this.apps.filter(
-          app =>
-            app.name.toLowerCase().includes(query) ||
-            (app.category || '').toLowerCase().includes(query)
-        );
+        // 有搜索条件时，重置到第一页并搜索
+        this.currentPage = 1;
+        this.fetchApps();
       }, 500);
+    },
+
+    // 分页方法
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
+        this.currentPage = page;
+        this.fetchApps();
+      }
+    },
+
+    previousPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.fetchApps();
+      }
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        this.fetchApps();
+      }
+    },
+
+    changePageSize(newSize) {
+      this.pageSize = newSize;
+      this.currentPage = 1;
+      this.fetchApps();
     },
 
     async openAddAppForm() {
@@ -432,6 +514,48 @@ export default {
       } else {
         console.error('无法从 file 参数中提取 iconURI:', file);
       }
+    },
+
+    // 计算可见的页码
+    getVisiblePages() {
+      const pages = [];
+      const total = this.totalPages;
+      const current = this.currentPage;
+
+      if (total <= 7) {
+        // 总页数少于等于7页，显示所有页码
+        for (let i = 1; i <= total; i++) {
+          pages.push(i);
+        }
+      } else {
+        // 总页数大于7页，显示省略号
+        if (current <= 4) {
+          // 当前页在前面
+          for (let i = 1; i <= 5; i++) {
+            pages.push(i);
+          }
+          pages.push('...');
+          pages.push(total);
+        } else if (current >= total - 3) {
+          // 当前页在后面
+          pages.push(1);
+          pages.push('...');
+          for (let i = total - 4; i <= total; i++) {
+            pages.push(i);
+          }
+        } else {
+          // 当前页在中间
+          pages.push(1);
+          pages.push('...');
+          for (let i = current - 1; i <= current + 1; i++) {
+            pages.push(i);
+          }
+          pages.push('...');
+          pages.push(total);
+        }
+      }
+
+      return pages;
     }
   },
   created() {
@@ -857,6 +981,103 @@ export default {
               box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
               transform: translateY(-1px);
             }
+          }
+        }
+      }
+    }
+  }
+
+  // 分页样式
+  .pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border-color);
+
+    .pagination-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+
+      .page-size-selector {
+        padding: 0.25rem 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--card-bg);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+      }
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .pagination-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--card-bg);
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background-color: var(--accent-primary);
+          color: white;
+          border-color: var(--accent-primary);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+
+      .page-numbers {
+        display: flex;
+        gap: 0.25rem;
+
+        .page-btn {
+          min-width: 2.5rem;
+          height: 2.5rem;
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          background-color: var(--card-bg);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.9rem;
+
+          &:hover:not(:disabled):not(.ellipsis) {
+            background-color: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+          }
+
+          &.active {
+            background-color: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+          }
+
+          &.ellipsis {
+            border: none;
+            background: none;
+            cursor: default;
+            color: var(--text-secondary);
+          }
+
+          &:disabled {
+            cursor: not-allowed;
           }
         }
       }

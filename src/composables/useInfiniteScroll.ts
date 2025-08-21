@@ -5,13 +5,14 @@ export interface UseInfiniteScrollOptions {
   threshold?: number; // 距离底部多少像素时触发加载
   immediate?: boolean; // 是否立即加载第一页
   rootMargin?: string; // Intersection Observer 的 rootMargin
+  pageSize?: number; // 每页加载的数量
 }
 
 export function useInfiniteScroll<T>(
   fetchFunction: (params: InfiniteScrollParams) => Promise<InfiniteScrollResponse<T>>,
   options: UseInfiniteScrollOptions = {}
 ) {
-  const { threshold = 1000, immediate = true, rootMargin = '0px' } = options;
+  const { threshold = 1000, immediate = true, rootMargin = '0px', pageSize = 20 } = options;
 
   // 响应式状态
   const items: Ref<T[]> = ref([]);
@@ -38,7 +39,7 @@ export function useInfiniteScroll<T>(
       error.value = null;
 
       const params: InfiniteScrollParams = {
-        limit: 20,
+        limit: pageSize,
         ...filters.value,
         cursor: reset ? undefined : nextCursor.value
       };

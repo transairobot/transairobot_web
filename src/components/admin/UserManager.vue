@@ -1,47 +1,59 @@
 <template>
-  <div class="featured-apps-manager">
+  <div class="user-manager">
     <div class="section-header">
-      <h2>Featured Applications</h2>
-      <p>Manage which applications are featured in the store</p>
+      <h2>User Management</h2>
+      <p>Manage user accounts and permissions</p>
     </div>
 
-    <div class="search-bar">
-      <input
-        type="text"
-        v-model="searchQuery"
-        placeholder="Search applications..."
-        @input="searchApps"
-      />
+    <!-- 搜索和筛选 -->
+    <div class="user-controls">
+      <div class="search-bar">
+        <input
+          v-model="searchQuery"
+          @input="searchUsers"
+          type="text"
+          placeholder="Search users by name or email..."
+          class="search-input"
+        />
+      </div>
+
+      <div class="user-filters">
+        <select v-model="userFilters.role" @change="filterUsers" class="filter-select">
+          <option value="">All Roles</option>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <select v-model="userFilters.status" @change="filterUsers" class="filter-select">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="disabled">Disabled</option>
+        </select>
+      </div>
     </div>
 
-    <div class="app-list">
+    <!-- 用户列表 -->
+    <div class="user-list">
       <div v-if="loading" class="loading-state">
-        <p>Loading applications...</p>
+        <p>Loading users...</p>
       </div>
 
-      <div v-else-if="filteredApps.length === 0" class="empty-state">
-        <p>No applications found</p>
+      <div v-else-if="filteredUsers.length === 0" class="empty-state">
+        <p>No users found</p>
       </div>
 
-      <div v-else class="app-grid">
-        <div
-          v-for="app in filteredApps"
-          :key="app.id"
-          class="app-card"
-          :class="{ featured: app.featured }"
-        >
-          <div class="app-icon">
-            <img :src="app.iconUrl || '/assets/icons/default-app.png'" :alt="app.name + ' icon'" />
+      <div v-else class="users-grid">
+        <div v-for="user in filteredUsers" :key="user.id" class="user-item">
+          <div class="user-info">
+            <strong>{{ user.nickname }}</strong>
+            <span class="user-email">{{ user.email }}</span>
+            <span class="user-role" :class="user.role">{{ user.role }}</span>
+            <span class="user-date">Joined: {{ formatDate(user.createdAt) }}</span>
           </div>
-          <div class="app-info">
-            <h3>{{ app.name }}</h3>
-            <p class="category">Category: {{ app.category }}</p>
-            <p class="status">Status: {{ app.status || 'active' }}</p>
-          </div>
-          <div class="app-actions">
-            <button @click="toggleFeature(app)" :class="{ 'featured-btn': app.featured }">
-              {{ app.featured ? 'Unfeature' : 'Feature' }}
+          <div class="user-actions">
+            <button v-if="!user.isDisabled" @click="disableUser(user.id)" class="btn-danger">
+              Disable
             </button>
+            <button v-else @click="enableUser(user.id)" class="btn-success">Enable</button>
           </div>
         </div>
       </div>
@@ -89,18 +101,23 @@
 
 <script>
 import { adminService } from '@/services';
+import { formatDate } from '@/utils/format';
 
 export default {
-  name: 'FeaturedAppsManager',
+  name: 'UserManager',
   emits: ['show-notification'],
   data() {
     return {
-      searchQuery: '',
-      apps: [],
-      filteredApps: [],
-      categories: [],
+      users: [],
+      filteredUsers: [],
       loading: false,
-      searchTimeout: null, // 添加防抖定时器
+      error: null,
+      searchQuery: '',
+      searchTimeout: null,
+      userFilters: {
+        role: '',
+        status: ''
+      },
       // 分页相关
       currentPage: 1,
       pageSize: 20,
@@ -109,70 +126,59 @@ export default {
     };
   },
   methods: {
-    async fetchApps() {
+    async fetchUsers() {
       this.loading = true;
+      this.error = null;
 
       try {
-        const result = await adminService.getFeaturedApplicationsForAdmin({
+        const result = await adminService.getUsers({
           page: this.currentPage,
           limit: this.pageSize,
-          name: this.searchQuery || undefined
+          role: this.userFilters.role || undefined,
+          status: this.userFilters.status || undefined,
+          search: this.searchQuery || undefined
         });
 
-        // 处理新的响应格式
-        let appsData = [];
+        // 处理新的响应格式 - API 服务已经提取了 data 字段
+        let usersData = [];
         let total = 0;
 
-        // 处理新的响应格式 - API 服务已经提取了 data 字段
         if (result) {
-          // API 服务返回的直接是 data 内容: { items: [...], pagination: { total: 1 } }
+          // API 服务返回的直接是 data 内容: { items: [...], pagination: { total: 2 } }
           if (result.items && Array.isArray(result.items)) {
-            appsData = result.items;
+            usersData = result.items;
             total = result.pagination ? result.pagination.total : result.items.length;
           }
           // 兼容旧格式: 直接是数组
           else if (Array.isArray(result)) {
-            appsData = result;
+            usersData = result;
             total = result.length;
           }
-          // 兼容其他格式 (如果 API 服务没有提取 data)
+          // 兼容其他格式
           else if (result.data && result.data.items) {
-            appsData = result.data.items;
+            usersData = result.data.items;
             total = result.data.pagination
               ? result.data.pagination.total
               : result.data.items.length;
           }
-          // 兼容索引对象格式: {0: {...}, 1: {...}}
-          else if (typeof result === 'object' && !Array.isArray(result)) {
-            const keys = Object.keys(result);
-            const isIndexedObject = keys.length > 0 && keys.every(key => /^\d+$/.test(key));
-
-            if (isIndexedObject) {
-              appsData = Object.values(result);
-              total = appsData.length;
-            }
-          }
         }
 
-        this.apps = appsData.map(app => ({
-          ...app,
-          featured: app.isFeatured || app.featured // 将 isFeatured 映射为 featured
-        }));
-
-        this.filteredApps = [...this.apps];
+        this.users = usersData;
+        this.filteredUsers = [...this.users];
         this.totalItems = total;
         this.totalPages = Math.ceil(total / this.pageSize);
       } catch (error) {
-        // 静默处理错误，不显示任何通知或错误状态
-        console.error('Error fetching featured apps:', error);
-        this.apps = [];
-        this.filteredApps = [];
+        this.error = 'Failed to load users';
+        this.users = [];
+        this.filteredUsers = [];
+        this.totalItems = 0;
+        this.totalPages = 0;
       } finally {
         this.loading = false;
       }
     },
 
-    searchApps() {
+    searchUsers() {
       // 清除之前的定时器
       if (this.searchTimeout) {
         clearTimeout(this.searchTimeout);
@@ -181,36 +187,77 @@ export default {
       // 设置新的定时器，500ms后执行搜索
       this.searchTimeout = setTimeout(() => {
         this.currentPage = 1; // 搜索时重置到第一页
-        this.fetchApps();
+        this.fetchUsers();
       }, 500);
+    },
+
+    filterUsers() {
+      this.currentPage = 1; // 筛选时重置到第一页
+      this.fetchUsers();
+    },
+
+    async disableUser(userId) {
+      try {
+        await adminService.disableUser(userId);
+        this.$emit('show-notification', {
+          type: 'success',
+          message: 'User disabled successfully'
+        });
+        this.fetchUsers(); // 重新加载用户列表
+      } catch (error) {
+        this.$emit('show-notification', {
+          type: 'error',
+          message: 'Failed to disable user'
+        });
+      }
+    },
+
+    async enableUser(userId) {
+      try {
+        await adminService.enableUser(userId);
+        this.$emit('show-notification', {
+          type: 'success',
+          message: 'User enabled successfully'
+        });
+        this.fetchUsers(); // 重新加载用户列表
+      } catch (error) {
+        this.$emit('show-notification', {
+          type: 'error',
+          message: 'Failed to enable user'
+        });
+      }
+    },
+
+    formatDate(dateString) {
+      return formatDate(dateString);
     },
 
     // 分页方法
     goToPage(page) {
       if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
         this.currentPage = page;
-        this.fetchApps();
+        this.fetchUsers();
       }
     },
 
     previousPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
-        this.fetchApps();
+        this.fetchUsers();
       }
     },
 
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
-        this.fetchApps();
+        this.fetchUsers();
       }
     },
 
     changePageSize(newSize) {
       this.pageSize = newSize;
       this.currentPage = 1;
-      this.fetchApps();
+      this.fetchUsers();
     },
 
     // 计算可见的页码
@@ -253,55 +300,23 @@ export default {
       }
 
       return pages;
-    },
-
-    async toggleFeature(app) {
-      try {
-        // 调用真实的API
-        if (app.featured) {
-          await adminService.unfeatureApplication(app.id);
-        } else {
-          await adminService.featureApplication(app.id);
-        }
-
-        // 更新本地状态
-        app.featured = !app.featured;
-
-        this.$emit('show-notification', {
-          type: 'success',
-          message: app.featured
-            ? `${app.name} is now featured`
-            : `${app.name} is no longer featured`
-        });
-      } catch (error) {
-        console.error('Error toggling feature status:', error);
-
-        this.$emit('show-notification', {
-          type: 'error',
-          message: 'Failed to update feature status'
-        });
-      }
     }
   },
   created() {
-    this.fetchApps();
-  },
-  beforeUnmount() {
-    // 清理定时器，防止内存泄漏
-    if (this.searchTimeout) {
-      clearTimeout(this.searchTimeout);
-    }
+    this.fetchUsers();
   }
 };
 </script>
 
 <style lang="scss" scoped>
-.featured-apps-manager {
+@import '@/assets/styles/variables.scss';
+
+.user-manager {
   .section-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: $spacing-lg;
 
     h2 {
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 $spacing-xs 0;
       color: var(--text-primary);
     }
 
@@ -311,137 +326,158 @@ export default {
     }
   }
 
-  .search-bar {
-    margin-bottom: 1.5rem;
+  .user-controls {
+    display: flex;
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+    flex-wrap: wrap;
 
-    input {
-      width: 100%;
-      padding: 0.75rem;
-      border-radius: 4px;
-      border: 1px solid var(--border-color);
-      background-color: var(--card-bg);
-      color: var(--text-primary);
-      font-size: 1rem;
+    .search-bar {
+      flex: 1;
+      min-width: 300px;
 
-      &:focus {
-        outline: none;
-        border-color: #007bff;
+      .search-input {
+        width: 100%;
+        padding: $spacing-sm;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--card-bg);
+        color: var(--text-primary);
+
+        &:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
+        }
+
+        &::placeholder {
+          color: var(--text-secondary);
+        }
+      }
+    }
+
+    .user-filters {
+      display: flex;
+      gap: $spacing-sm;
+
+      .filter-select {
+        padding: $spacing-sm;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--card-bg);
+        color: var(--text-primary);
+        min-width: 120px;
+
+        &:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+        }
       }
     }
   }
 
-  .app-list {
+  .user-list {
     .loading-state,
-    .error-state,
     .empty-state {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 200px;
+      text-align: center;
+      padding: $spacing-xl;
       color: var(--text-secondary);
-
-      button {
-        margin-top: 1rem;
-        padding: 0.5rem 1rem;
-        background: var(--accent-primary);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
     }
 
-    .app-grid {
+    .users-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem;
+      gap: $spacing-md;
+      margin-bottom: $spacing-lg;
 
-      .app-card {
+      .user-item {
         display: flex;
-        flex-direction: column;
-        padding: 1.5rem;
+        justify-content: space-between;
+        align-items: center;
+        padding: $spacing-md;
         background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         transition: all 0.2s ease;
-        position: relative;
 
-        &.featured {
-          border: 2px solid var(--success, #28a745);
-
-          &::before {
-            content: 'Featured';
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: var(--success, #28a745);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
-          }
+        &:hover {
+          border-color: var(--accent-primary);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .app-icon {
-          width: 60px;
-          height: 60px;
-          margin-bottom: 1rem;
+        .user-info {
+          display: flex;
+          flex-direction: column;
+          gap: $spacing-xs;
 
-          img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
-          }
-        }
-
-        .app-info {
-          flex: 1;
-
-          h3 {
-            margin: 0 0 0.5rem 0;
+          strong {
             color: var(--text-primary);
+            font-size: 1.1rem;
           }
 
-          p {
-            margin: 0 0 0.5rem 0;
+          .user-email {
             color: var(--text-secondary);
             font-size: 0.9rem;
           }
 
-          .status {
+          .user-role {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
             font-size: 0.8rem;
-            text-transform: capitalize;
+            font-weight: 500;
+            text-transform: uppercase;
+
+            &.admin {
+              background-color: #e3f2fd;
+              color: #1976d2;
+            }
+
+            &.user {
+              background-color: #f3e5f5;
+              color: #7b1fa2;
+            }
+          }
+
+          .user-date {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
           }
         }
 
-        .app-actions {
-          margin-top: 1rem;
+        .user-actions {
+          display: flex;
+          gap: $spacing-xs;
 
-          button {
-            width: 100%;
-            padding: 0.5rem 1rem;
+          .btn-danger,
+          .btn-success {
+            padding: $spacing-xs $spacing-sm;
+            border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 0.9rem;
             font-weight: 500;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
             transition: all 0.2s ease;
 
             &:hover {
-              background-color: var(--surface-secondary);
+              transform: translateY(-1px);
             }
+          }
 
-            &.featured-btn {
-              background-color: var(--success, #28a745);
-              color: white;
-              border: none;
+          .btn-danger {
+            background-color: #f44336;
+            color: white;
 
-              &:hover {
-                background-color: var(--success-dark, #218838);
-              }
+            &:hover {
+              background-color: #d32f2f;
+            }
+          }
+
+          .btn-success {
+            background-color: #4caf50;
+            color: white;
+
+            &:hover {
+              background-color: #388e3c;
             }
           }
         }
@@ -542,6 +578,47 @@ export default {
             cursor: not-allowed;
           }
         }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .user-manager {
+    .user-controls {
+      flex-direction: column;
+
+      .search-bar {
+        min-width: auto;
+      }
+
+      .user-filters {
+        justify-content: stretch;
+
+        .filter-select {
+          flex: 1;
+        }
+      }
+    }
+
+    .users-grid .user-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-sm;
+
+      .user-actions {
+        align-self: stretch;
+        justify-content: flex-end;
+      }
+    }
+
+    .pagination-container {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+
+      .pagination-controls {
+        justify-content: center;
       }
     }
   }

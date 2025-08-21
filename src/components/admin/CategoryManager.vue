@@ -131,7 +131,7 @@ export default {
         } else if (result && typeof result === 'object') {
           categories = Object.values(result);
         } else {
-          console.log('Unexpected result structure:', result);
+          categories = [];
         }
 
         // Ensure each category has the required properties

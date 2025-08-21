@@ -14,15 +14,15 @@ export const formatDate = (
 ): string => {
   if (!date) return '';
 
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  };
-
   const dateObj = typeof date === 'string' ? new Date(date) : date;
 
-  return new Intl.DateTimeFormat('en-US', { ...defaultOptions, ...options }).format(dateObj);
+  // 如果没有提供选项，使用 toLocaleDateString() 的默认行为
+  if (Object.keys(options).length === 0) {
+    return dateObj.toLocaleDateString();
+  }
+
+  // 否则使用 Intl.DateTimeFormat 和提供的选项
+  return new Intl.DateTimeFormat(undefined, options).format(dateObj);
 };
 
 /**
