@@ -123,13 +123,39 @@ class AdminService {
   }
 
   async createApplication(applicationData: any): Promise<Application> {
-    const result = await api.post('/admin/applications', applicationData);
+    // Transform single category to categoryIds array if needed
+    const requestData = {
+      ...applicationData,
+      categoryIds: Array.isArray(applicationData.categoryIds)
+        ? applicationData.categoryIds
+        : applicationData.category
+        ? [applicationData.category]
+        : []
+    };
+
+    // Remove old category field
+    delete requestData.category;
+
+    const result = await api.post('/admin/applications', requestData);
     notificationService.success('Application created successfully');
     return result;
   }
 
   async updateApplication(appId: string, applicationData: any): Promise<Application> {
-    const result = await api.put(`/admin/applications/${appId}`, applicationData);
+    // Transform single category to categoryIds array if needed
+    const requestData = {
+      ...applicationData,
+      categoryIds: Array.isArray(applicationData.categoryIds)
+        ? applicationData.categoryIds
+        : applicationData.category
+        ? [applicationData.category]
+        : undefined
+    };
+
+    // Remove old category field
+    delete requestData.category;
+
+    const result = await api.put(`/admin/applications/${appId}`, requestData);
     notificationService.success('Application updated successfully');
     return result;
   }

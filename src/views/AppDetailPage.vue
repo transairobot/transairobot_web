@@ -54,9 +54,13 @@
                   </div>
                 </div>
 
-                <div class="app-detail-categories" v-if="app.category">
-                  <span class="app-detail-category-tag">
-                    {{ app.category }}
+                <div class="app-detail-categories" v-if="app.category && app.category.length > 0">
+                  <span
+                    v-for="categoryName in app.category"
+                    :key="categoryName"
+                    class="app-detail-category-tag"
+                  >
+                    {{ categoryName }}
                   </span>
                 </div>
 

@@ -51,7 +51,20 @@
                 />
               </td>
               <td>{{ app.name }}</td>
-              <td>{{ app.category || 'No Category' }}</td>
+              <td>
+                <div class="app-categories">
+                  <template v-if="app.category && app.category.length > 0">
+                    <span
+                      v-for="categoryName in app.category"
+                      :key="categoryName"
+                      class="category-badge"
+                    >
+                      {{ categoryName }}
+                    </span>
+                  </template>
+                  <span v-else class="no-category">No Categories</span>
+                </div>
+              </td>
               <td>{{ app.version }}</td>
               <td>
                 <span class="status-badge" :class="app.status || 'active'">
@@ -138,20 +151,48 @@
             </div>
 
             <div class="form-group">
-              <label for="appCategory">Category</label>
-              <select
-                id="appCategory"
-                v-model="appForm.category"
-                required
-                :disabled="categoriesLoading"
-              >
-                <option v-if="!appForm.category" value="" disabled>
-                  {{ categoriesLoading ? 'Loading categories...' : 'Select Category' }}
-                </option>
-                <option v-for="category in categories" :key="category.id" :value="category.id">
-                  {{ category.name }}
-                </option>
-              </select>
+              <label for="appCategory">Categories</label>
+              <div class="category-selection">
+                <div
+                  class="selected-categories"
+                  v-if="appForm.categoryIds && appForm.categoryIds.length > 0"
+                >
+                  <span
+                    v-for="categoryId in appForm.categoryIds"
+                    :key="categoryId"
+                    class="category-tag"
+                  >
+                    {{ getCategoryName(categoryId) }}
+                    <button
+                      type="button"
+                      class="remove-category"
+                      @click="removeCategory(categoryId)"
+                      title="Remove category"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
+                <select
+                  id="appCategory"
+                  v-model="selectedCategoryToAdd"
+                  @change="addCategory"
+                  :disabled="categoriesLoading"
+                  class="category-selector"
+                >
+                  <option value="">
+                    {{ categoriesLoading ? 'Loading categories...' : 'Select a category to add' }}
+                  </option>
+                  <option
+                    v-for="category in availableCategories"
+                    :key="category.id"
+                    :value="category.id"
+                  >
+                    {{ category.name }}
+                  </option>
+                </select>
+                <p class="form-hint">You can select multiple categories for this application</p>
+              </div>
             </div>
 
             <div class="form-group">
@@ -245,7 +286,7 @@ export default {
       appForm: {
         name: '',
         description: '',
-        category: '', // 这里存储的是categoryId
+        categoryIds: [], // Changed to array for multiple categories
         version: '',
         iconURI: ''
       },
@@ -257,8 +298,17 @@ export default {
       currentPage: 1,
       pageSize: 20,
       totalItems: 0,
-      totalPages: 0
+      totalPages: 0,
+      // 分类选择相关
+      selectedCategoryToAdd: ''
     };
+  },
+  computed: {
+    // 可用的分类（排除已选择的）
+    availableCategories() {
+      if (!this.appForm.categoryIds) return this.categories;
+      return this.categories.filter(category => !this.appForm.categoryIds.includes(category.id));
+    }
   },
   methods: {
     async fetchApps() {
@@ -367,6 +417,25 @@ export default {
       return category ? category.name : 'Unknown Category';
     },
 
+    // 添加分类到应用
+    addCategory() {
+      if (
+        this.selectedCategoryToAdd &&
+        !this.appForm.categoryIds.includes(this.selectedCategoryToAdd)
+      ) {
+        this.appForm.categoryIds.push(this.selectedCategoryToAdd);
+        this.selectedCategoryToAdd = '';
+      }
+    },
+
+    // 从应用中移除分类
+    removeCategory(categoryId) {
+      const index = this.appForm.categoryIds.indexOf(categoryId);
+      if (index > -1) {
+        this.appForm.categoryIds.splice(index, 1);
+      }
+    },
+
     searchApps() {
       // 清除之前的定时器
       if (this.searchTimeout) {
@@ -424,12 +493,37 @@ export default {
     async editApp(app) {
       await this.fetchCategories();
       this.editingApp = app;
+
+      // Handle both old single category and new multiple categories format
+      let categoryIds = [];
+      if (app.categoryIds && Array.isArray(app.categoryIds)) {
+        categoryIds = [...app.categoryIds];
+      } else if (app.category) {
+        if (Array.isArray(app.category)) {
+          // If category is an array of names, convert to IDs
+          categoryIds = app.category
+            .map(categoryName => {
+              const category = this.categories.find(cat => cat.name === categoryName);
+              return category ? category.id : null;
+            })
+            .filter(id => id !== null);
+        } else {
+          // Single category (old format)
+          const category = this.categories.find(
+            cat => cat.id === app.category || cat.name === app.category
+          );
+          if (category) {
+            categoryIds = [category.id];
+          }
+        }
+      }
+
       this.appForm = {
         name: app.name,
         description: app.description,
-        category: app.category,
+        categoryIds: categoryIds,
         version: app.version,
-        iconURI: app.iconURI || ''
+        iconURI: app.iconURI || app.iconUrl || ''
       };
       this.showAddAppForm = true;
     },
@@ -440,10 +534,11 @@ export default {
       this.appForm = {
         name: '',
         description: '',
-        category: '',
+        categoryIds: [],
         version: '',
         iconURI: ''
       };
+      this.selectedCategoryToAdd = '';
     },
 
     async saveApp() {
@@ -684,6 +779,27 @@ export default {
           object-fit: cover;
         }
 
+        .app-categories {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+
+          .category-badge {
+            padding: 0.2rem 0.5rem;
+            background-color: var(--accent-primary);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+          }
+
+          .no-category {
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.9rem;
+          }
+        }
+
         .status-badge {
           padding: 0.25rem 0.5rem;
           border-radius: 12px;
@@ -819,6 +935,61 @@ export default {
 
       textarea {
         resize: vertical;
+      }
+    }
+
+    .category-selection {
+      .selected-categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+
+        .category-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 0.75rem;
+          background-color: var(--accent-primary);
+          color: white;
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 500;
+
+          .remove-category {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s ease;
+
+            &:hover {
+              background-color: rgba(255, 255, 255, 0.2);
+            }
+          }
+        }
+      }
+
+      .category-selector {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+
+      .form-hint {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin: 0;
+        font-style: italic;
       }
     }
 

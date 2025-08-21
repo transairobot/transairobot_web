@@ -35,7 +35,18 @@
           </div>
           <div class="app-info">
             <h3>{{ app.name }}</h3>
-            <p class="category">Category: {{ app.category }}</p>
+            <div class="app-categories">
+              <template v-if="app.category && app.category.length > 0">
+                <span
+                  v-for="categoryName in app.category"
+                  :key="categoryName"
+                  class="category-badge"
+                >
+                  {{ categoryName }}
+                </span>
+              </template>
+              <span v-else class="no-category">No Categories</span>
+            </div>
             <p class="status">Status: {{ app.status || 'active' }}</p>
           </div>
           <div class="app-actions">
@@ -403,6 +414,28 @@ export default {
           h3 {
             margin: 0 0 0.5rem 0;
             color: var(--text-primary);
+          }
+
+          .app-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-bottom: 0.5rem;
+
+            .category-badge {
+              padding: 0.2rem 0.5rem;
+              background-color: var(--accent-primary);
+              color: white;
+              border-radius: 12px;
+              font-size: 0.75rem;
+              font-weight: 500;
+            }
+
+            .no-category {
+              color: var(--text-secondary);
+              font-style: italic;
+              font-size: 0.8rem;
+            }
           }
 
           p {

@@ -96,7 +96,20 @@
               <span v-if="app.featured" class="featured-badge">Featured</span>
               <span v-else>-</span>
             </td>
-            <td>{{ getCategoryName(app.category) }}</td>
+            <td>
+              <div class="app-categories">
+                <template v-if="app.category && app.category.length > 0">
+                  <span 
+                    v-for="categoryName in app.category" 
+                    :key="categoryName"
+                    class="category-badge"
+                  >
+                    {{ categoryName }}
+                  </span>
+                </template>
+                <span v-else class="no-category">No Categories</span>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -105,22 +118,31 @@
     <!-- Category Modal -->
     <div class="modal" v-if="showCategoryModal">
       <div class="modal-content">
-        <h3>Set Category</h3>
-        <p>Select a category for the selected applications:</p>
+        <h3>Set Categories</h3>
+        <p>Select categories for the selected applications:</p>
 
         <div class="form-group">
-          <label for="bulkCategory">Category</label>
-          <select id="bulkCategory" v-model="selectedCategory">
-            <option value="">-- Select Category --</option>
-            <option v-for="category in categories" :key="category.id" :value="category.id">
-              {{ category.name }}
-            </option>
-          </select>
+          <label>Categories</label>
+          <div class="category-checkboxes">
+            <div 
+              v-for="category in categories" 
+              :key="category.id" 
+              class="checkbox-item"
+            >
+              <input 
+                type="checkbox" 
+                :id="`category-${category.id}`"
+                :value="category.name"
+                v-model="selectedCategories"
+              />
+              <label :for="`category-${category.id}`">{{ category.name }}</label>
+            </div>
+          </div>
         </div>
 
         <div class="modal-actions">
           <button class="cancel-btn" @click="showCategoryModal = false">Cancel</button>
-          <button class="confirm-btn" @click="bulkSetCategory" :disabled="!selectedCategory">
+          <button class="confirm-btn" @click="bulkSetCategory" :disabled="selectedCategories.length === 0">
             Apply
           </button>
         </div>
@@ -165,7 +187,7 @@ export default {
         search: ''
       },
       showCategoryModal: false,
-      selectedCategory: '',
+      selectedCategories: [], // 改为数组支持多选
       showDeleteConfirmation: false,
       loading: false,
       error: null
@@ -196,7 +218,7 @@ export default {
               developer: 'RoboTech Inc.',
               status: 'approved',
               featured: true,
-              category: '1'
+              category: ['Navigation', 'Utilities'] // 改为多分类数组
             },
             {
               id: '2',
@@ -205,7 +227,7 @@ export default {
               developer: 'AI Solutions',
               status: 'approved',
               featured: false,
-              category: '4'
+              category: ['Communication', 'AI'] // 改为多分类数组
             },
             {
               id: '3',
@@ -214,7 +236,7 @@ export default {
               developer: 'Sensor Systems',
               status: 'approved',
               featured: true,
-              category: '3'
+              category: ['Sensors', 'Navigation'] // 改为多分类数组
             },
             {
               id: '4',
@@ -223,7 +245,7 @@ export default {
               developer: 'AI Dev',
               status: 'pending',
               featured: false,
-              category: '4'
+              category: ['Communication', 'AI'] // 改为多分类数组
             },
             {
               id: '5',
@@ -232,7 +254,7 @@ export default {
               developer: 'Vision Systems Inc.',
               status: 'pending',
               featured: false,
-              category: '3'
+              category: ['Sensors', 'AI'] // 改为多分类数组
             },
             {
               id: '6',
@@ -241,7 +263,7 @@ export default {
               developer: 'RoboTech Inc.',
               status: 'approved',
               featured: false,
-              category: '1'
+              category: ['Navigation', 'Utilities'] // 改为多分类数组
             }
           ];
 
@@ -263,9 +285,16 @@ export default {
         filtered = filtered.filter(app => app.status === this.filters.status);
       }
 
-      // Apply category filter
+      // Apply category filter - updated for multi-category support
       if (this.filters.category) {
-        filtered = filtered.filter(app => app.category === this.filters.category);
+        filtered = filtered.filter(app => {
+          if (!app.category || !Array.isArray(app.category)) return false;
+          // Check if any of the app's categories match the selected category ID
+          return app.category.some(categoryName => {
+            const category = this.categories.find(c => c.name === categoryName);
+            return category && category.id === this.filters.category;
+          });
+        });
       }
 
       // Apply search filter
@@ -282,11 +311,6 @@ export default {
       // Clear selection when filters change
       this.selectedApps = [];
     },
-
-    getCategoryName(categoryId) {
-      if (!categoryId) return 'Uncategorized';
-      const category = this.categories.find(c => c.id === categoryId);
-      return category ? category.name : 'Uncategorized';
     },
 
     isAppSelected(app) {
@@ -342,7 +366,7 @@ export default {
     },
 
     async bulkSetCategory() {
-      if (this.selectedApps.length === 0 || !this.selectedCategory) {
+      if (this.selectedApps.length === 0 || this.selectedCategories.length === 0) {
         this.showCategoryModal = false;
         return;
       }
@@ -353,28 +377,26 @@ export default {
         this.selectedApps.forEach(app => {
           const appInList = this.apps.find(a => a.id === app.id);
           if (appInList) {
-            appInList.category = this.selectedCategory;
+            appInList.category = [...this.selectedCategories]; // 设置为选中的多分类数组
           }
         });
 
         // Update filtered apps
         this.filteredApps = [...this.filteredApps];
 
-        const categoryName = this.getCategoryName(this.selectedCategory);
-
         this.$emit('show-notification', {
           type: 'success',
-          message: `${this.selectedApps.length} application(s) moved to "${categoryName}" category`
+          message: `${this.selectedApps.length} application(s) categories updated to: ${this.selectedCategories.join(', ')}`
         });
 
         this.showCategoryModal = false;
-        this.selectedCategory = '';
+        this.selectedCategories = []; // 重置选择
       } catch (error) {
-        console.error('Error updating category:', error);
+        console.error('Error updating categories:', error);
 
         this.$emit('show-notification', {
           type: 'error',
-          message: 'Failed to update category'
+          message: 'Failed to update categories'
         });
       }
     },
@@ -611,8 +633,60 @@ export default {
       }
     }
 
+    // 多分类显示样式
+    .app-categories {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+
+      .category-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        background-color: var(--accent-primary-light);
+        color: var(--accent-primary);
+        white-space: nowrap;
+      }
+
+      .no-category {
+        font-style: italic;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+      }
+    }
+
     tr:hover {
       background-color: var(--bg-secondary);
+    }
+  }
+
+  // 分类选择复选框样式
+  .category-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      input[type="checkbox"] {
+        margin: 0;
+      }
+
+      label {
+        margin: 0;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
     }
   }
 

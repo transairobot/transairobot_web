@@ -32,7 +32,9 @@
           </div>
           <div class="app-application-card__downloads">
             <span class="app-application-card__downloads-icon">↓</span>
-            <span class="app-application-card__downloads-count">N/A</span>
+            <span class="app-application-card__downloads-count">
+              {{ application.downloads ? formatDownloads(application.downloads) : 'N/A' }}
+            </span>
           </div>
         </div>
         <div class="app-application-card__category-tags">
