@@ -5,6 +5,7 @@ export interface ApiResponse<T> {
 }
 
 export const SuccessCode = 0;
+export const AuthFailedCode = 100101;
 
 // Application related types
 export interface Application {

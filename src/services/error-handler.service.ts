@@ -14,6 +14,12 @@ class ErrorHandlerService {
     defaultMessage = 'An error occurred. Please try again.'
   ): Error {
     console.error('API Error:', error);
+
+    // Don't show notification for authentication failures
+    if (error.message === 'AUTHENTICATION_FAILED') {
+      return error;
+    }
+
     const errorMessage = this.getErrorMessage(error, defaultMessage);
     if (showNotification) {
       notificationService.error(errorMessage);

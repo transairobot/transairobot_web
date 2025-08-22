@@ -1,5 +1,6 @@
 import api from './api';
 import notificationService from './notification.service';
+import { handleServiceError } from '../utils/error-utils';
 import {
   Application,
   InfiniteScrollResponse,
@@ -54,9 +55,8 @@ class RobotManagementService {
       }
 
       return response;
-    } catch (error) {
-      console.error('Failed to fetch robots:', error);
-      notificationService.error('获取机器人列表失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取机器人列表失败');
       throw error;
     }
   }
@@ -88,9 +88,8 @@ class RobotManagementService {
       }
 
       return response;
-    } catch (error) {
-      console.error('Failed to fetch active robots:', error);
-      notificationService.error('获取活跃机器人列表失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取活跃机器人列表失败');
       throw error;
     }
   }
@@ -109,9 +108,8 @@ class RobotManagementService {
             updatedAt: new Date(app.updatedAt)
           })) || []
       }));
-    } catch (error) {
-      console.error('Failed to fetch robots:', error);
-      notificationService.error('获取机器人列表失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取机器人列表失败');
       throw error;
     }
   }
@@ -130,9 +128,8 @@ class RobotManagementService {
             updatedAt: new Date(app.updatedAt)
           })) || []
       };
-    } catch (error) {
-      console.error('Failed to add robot:', error);
-      notificationService.error('添加机器人失败');
+    } catch (error: any) {
+      handleServiceError(error, '添加机器人失败');
       throw error;
     }
   }
@@ -150,9 +147,8 @@ class RobotManagementService {
             updatedAt: new Date(app.updatedAt)
           })) || []
       };
-    } catch (error) {
-      console.error('Failed to fetch robot details:', error);
-      notificationService.error('获取机器人详情失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取机器人详情失败');
       throw error;
     }
   }

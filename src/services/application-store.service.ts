@@ -1,5 +1,6 @@
 import api from './api';
 import notificationService from './notification.service';
+import { handleServiceError } from '../utils/error-utils';
 import { PagedResult } from './admin.service';
 
 // Data structure classes
@@ -75,9 +76,8 @@ class ApplicationStoreService {
       }
 
       return response;
-    } catch (error) {
-      console.error('Failed to fetch applications:', error);
-      notificationService.error('获取应用列表失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取应用列表失败');
       throw error;
     }
   }
@@ -106,9 +106,8 @@ class ApplicationStoreService {
       }
 
       return response;
-    } catch (error) {
-      console.error('Failed to fetch reviews:', error);
-      notificationService.error('获取评价列表失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取评价列表失败');
       throw error;
     }
   }
@@ -130,9 +129,8 @@ class ApplicationStoreService {
         createdAt: new Date(app.createdAt),
         updatedAt: new Date(app.updatedAt)
       }));
-    } catch (error) {
-      console.error('Failed to fetch applications:', error);
-      notificationService.error('获取应用列表失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取应用列表失败');
       throw error;
     }
   }
@@ -152,9 +150,8 @@ class ApplicationStoreService {
 
     try {
       return await api.get('/applications/search', { params });
-    } catch (error) {
-      console.error('Failed to search applications:', error);
-      notificationService.error('搜索应用失败');
+    } catch (error: any) {
+      handleServiceError(error, '搜索应用失败');
       throw error;
     }
   }
@@ -162,9 +159,8 @@ class ApplicationStoreService {
   async getCategories(): Promise<Category[]> {
     try {
       return await api.get('/applications/categories');
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-      notificationService.error('获取分类失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取分类失败');
       throw error;
     }
   }
@@ -177,9 +173,8 @@ class ApplicationStoreService {
         createdAt: new Date(response.createdAt),
         updatedAt: new Date(response.updatedAt)
       };
-    } catch (error) {
-      console.error('Failed to fetch application details:', error);
-      notificationService.error('获取应用详情失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取应用详情失败');
       throw error;
     }
   }
@@ -197,9 +192,8 @@ class ApplicationStoreService {
 
     try {
       return await api.get(`/applications/${applicationId}/reviews`, { params });
-    } catch (error) {
-      console.error('Failed to fetch reviews:', error);
-      notificationService.error('获取评价失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取评价失败');
       throw error;
     }
   }
@@ -207,9 +201,8 @@ class ApplicationStoreService {
   async getApplicationScreenshots(applicationId: string): Promise<Screenshot[]> {
     try {
       return await api.get(`/applications/${applicationId}/screenshots`);
-    } catch (error) {
-      console.error('Failed to fetch screenshots:', error);
-      notificationService.error('获取截图失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取截图失败');
       throw error;
     }
   }
@@ -241,9 +234,8 @@ class ApplicationStoreService {
         createdAt: new Date(app.createdAt),
         updatedAt: new Date(app.updatedAt)
       }));
-    } catch (error) {
-      console.error('Failed to fetch popular applications:', error);
-      notificationService.error('获取热门应用失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取热门应用失败');
       throw error;
     }
   }
@@ -258,9 +250,8 @@ class ApplicationStoreService {
         createdAt: new Date(app.createdAt),
         updatedAt: new Date(app.updatedAt)
       }));
-    } catch (error) {
-      console.error('Failed to fetch new applications:', error);
-      notificationService.error('获取最新应用失败');
+    } catch (error: any) {
+      handleServiceError(error, '获取最新应用失败');
       throw error;
     }
   }
@@ -273,9 +264,8 @@ class ApplicationStoreService {
     try {
       await api.post(`/applications/${applicationId}/reviews`, review);
       notificationService.success('评价提交成功');
-    } catch (error) {
-      console.error('Failed to submit review:', error);
-      notificationService.error('评价提交失败');
+    } catch (error: any) {
+      handleServiceError(error, '评价提交失败');
       throw error;
     }
   }

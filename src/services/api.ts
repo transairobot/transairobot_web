@@ -5,7 +5,8 @@ import store from '../store';
 import errorHandler from './error-handler.service';
 import transformer from './transformer.service';
 import notificationService from './notification.service';
-import { ApiResponse, SuccessCode } from '../types/api';
+import authModalService from './auth-modal.service';
+import { ApiResponse, SuccessCode, AuthFailedCode } from '../types/api';
 
 // API configuration
 const API_CONFIG = {
@@ -116,12 +117,19 @@ const handleResponse = async <T>(
     return Promise.reject(new Error('Invalid response format'));
   }
 
+  // Check for authentication failure first (regardless of HTTP status)
+  if (data && data.code === AuthFailedCode) {
+    store.dispatch('auth/logout');
+    authModalService.showAuthModal('You are not logged in. Please login to continue.');
+    return Promise.reject(new Error('AUTHENTICATION_FAILED')); // Special error type
+  }
+
   // For JSON responses, check the custom API response structure
   if (response.ok) {
     const apiResponse = data as ApiResponse<T>;
 
     if (apiResponse.code !== SuccessCode) {
-      // Handle API-level errors (e.g., validation errors)
+      // Handle other API-level errors (e.g., validation errors)
       notificationService.error(apiResponse.message);
       return Promise.reject(new Error(apiResponse.message));
     }
@@ -500,6 +508,17 @@ export const uploadFiles = async (
               let data;
               try {
                 data = JSON.parse(xhr.responseText);
+
+                // Check for authentication failure first (regardless of HTTP status)
+                if (data && data.code === AuthFailedCode) {
+                  store.dispatch('auth/logout');
+                  authModalService.showAuthModal(
+                    'You are not logged in. Please login to continue.'
+                  );
+                  reject(new Error('AUTHENTICATION_FAILED')); // Special error type
+                  return;
+                }
+
                 const apiResponse = data as ApiResponse<any>;
 
                 if (apiResponse.code !== SuccessCode) {
@@ -527,9 +546,21 @@ export const uploadFiles = async (
               }
             } else {
               let errorMessage;
+              let errorData;
               try {
-                const errorData = JSON.parse(xhr.responseText);
-                errorMessage = errorData.msg || errorData.message || `Error: ${xhr.status}`;
+                errorData = JSON.parse(xhr.responseText);
+
+                // Check for authentication failure first
+                if (errorData && errorData.code === AuthFailedCode) {
+                  store.dispatch('auth/logout');
+                  authModalService.showAuthModal(
+                    'You are not logged in. Please login to continue.'
+                  );
+                  reject(new Error('AUTHENTICATION_FAILED')); // Special error type
+                  return;
+                }
+
+                errorMessage = errorData.message || errorData.msg || `Error: ${xhr.status}`;
               } catch (e) {
                 errorMessage = xhr.responseText || `Error: ${xhr.status}`;
               }

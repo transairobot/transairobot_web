@@ -7,6 +7,7 @@ import uploadService from './upload.service';
 import notificationService from './notification.service';
 import errorHandler from './error-handler.service';
 import transformer from './transformer.service';
+import authModalService from './auth-modal.service';
 
 export {
   api,
@@ -17,7 +18,8 @@ export {
   uploadService,
   notificationService,
   errorHandler,
-  transformer
+  transformer,
+  authModalService
 };
 
 export default {
@@ -29,5 +31,6 @@ export default {
   upload: uploadService,
   notification: notificationService,
   errorHandler,
-  transformer
+  transformer,
+  authModal: authModalService
 };
