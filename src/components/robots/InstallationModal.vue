@@ -34,11 +34,13 @@
             @click="selectRobot(robot)"
           >
             <div class="robot-icon">
-              <img :src="robot.icon" :alt="robot.name" />
+              <img :src="robot.icon || '/assets/icons/default-robot.png'" :alt="robot.name" />
             </div>
             <div class="robot-info">
               <h5 class="robot-name">{{ robot.name }}</h5>
-              <div class="robot-status" :class="robot.status">{{ robot.status }}</div>
+              <div class="robot-status" :class="getRobotStatusClass(robot)">
+                {{ getRobotStatusText(robot) }}
+              </div>
             </div>
             <div class="robot-select-indicator">
               <svg
@@ -331,6 +333,16 @@ export default {
       }, 300);
     };
 
+    const getRobotStatusClass = robot => {
+      if (robot.is_online) return 'online';
+      return robot.connection_status || 'offline';
+    };
+
+    const getRobotStatusText = robot => {
+      if (robot.is_online) return 'online';
+      return robot.connection_status || 'offline';
+    };
+
     // Watch for modal opening
     watch(
       () => showModal.value,
@@ -358,7 +370,9 @@ export default {
       cancelInstallation,
       retryInstallation,
       viewRobot,
-      handleClose
+      handleClose,
+      getRobotStatusClass,
+      getRobotStatusText
     };
   }
 };

@@ -40,21 +40,22 @@ class RobotManagementService {
         showErrorNotification: false
       });
 
+      // 处理嵌套的数据结构
+      const result = {
+        data: response.data?.data || response.data || [],
+        hasMore: response.data?.hasMore || false
+      };
+
       // 转换日期字段
-      if (response.data) {
-        response.data = response.data.map((robot: any) => ({
+      if (result.data) {
+        result.data = result.data.map((robot: any) => ({
           ...robot,
-          last_seen: new Date(robot.last_seen),
-          installed_apps:
-            robot.installed_apps?.map((app: any) => ({
-              ...app,
-              createdAt: new Date(app.createdAt),
-              updatedAt: new Date(app.updatedAt)
-            })) || []
+          last_seen: new Date(robot.last_seen * 1000), // 转换时间戳
+          installed_apps: robot.installed_apps || []
         }));
       }
 
-      return response;
+      return result;
     } catch (error: any) {
       handleServiceError(error, '获取机器人列表失败');
       throw error;
@@ -73,21 +74,22 @@ class RobotManagementService {
     try {
       const response = await api.get('/robots/active', { params: queryParams });
 
+      // 处理嵌套的数据结构
+      const result = {
+        data: response.data?.data || response.data || [],
+        hasMore: response.data?.hasMore || false
+      };
+
       // 转换日期字段
-      if (response.data) {
-        response.data = response.data.map((robot: any) => ({
+      if (result.data) {
+        result.data = result.data.map((robot: any) => ({
           ...robot,
-          last_seen: new Date(robot.last_seen),
-          installed_apps:
-            robot.installed_apps?.map((app: any) => ({
-              ...app,
-              createdAt: new Date(app.createdAt),
-              updatedAt: new Date(app.updatedAt)
-            })) || []
+          last_seen: new Date(robot.last_seen * 1000), // 转换时间戳
+          installed_apps: robot.installed_apps || []
         }));
       }
 
-      return response;
+      return result;
     } catch (error: any) {
       handleServiceError(error, '获取活跃机器人列表失败');
       throw error;
@@ -98,15 +100,11 @@ class RobotManagementService {
   async getRobots(): Promise<Array<Robot>> {
     try {
       const response = await api.get('/robots/list');
-      return response.map((robot: any) => ({
+      const robotsData = response.data?.data || response.data || response;
+      return robotsData.map((robot: any) => ({
         ...robot,
-        last_seen: new Date(robot.last_seen),
-        installed_apps:
-          robot.installed_apps?.map((app: any) => ({
-            ...app,
-            createdAt: new Date(app.createdAt),
-            updatedAt: new Date(app.updatedAt)
-          })) || []
+        last_seen: new Date(robot.last_seen * 1000), // 转换时间戳
+        installed_apps: robot.installed_apps || []
       }));
     } catch (error: any) {
       handleServiceError(error, '获取机器人列表失败');
